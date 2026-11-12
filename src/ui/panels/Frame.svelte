@@ -212,6 +212,15 @@
     grow = tuning.growDefault;
   }
 
+  /** The stage size now and after Apply, so the switch never changes the file size by surprise. */
+  const sizeHint = $derived.by(() => {
+    if (!doc) return '';
+    const side = cleanFrame(params).width;
+    const from = `${doc.width} × ${doc.height}`;
+    if (!grow) return t('adjust.frame.coverHint', { from });
+    return t('adjust.frame.growHint', { from, to: `${doc.width + 2 * side} × ${doc.height + 2 * side}` });
+  });
+
   const note = $derived(existing ? t('adjust.frame.editing', { name: existing.name }) : t('adjust.frame.new'));
   // Without growing, a border wider than half of the shorter side would fill the stage.
   const shownLimit = $derived(doc ? frameWidth(doc.width, doc.height, { width: Number.MAX_SAFE_INTEGER, color: params.color }) : 0);
@@ -248,7 +257,7 @@
     <ColorField id="adjust-frame-color" label={t('adjust.frame.color')} color={params.color} onchange={(color) => (params = { ...params, color: { ...color, a: 255 } })} />
     {#if !existing}
       <ToggleSwitch id="adjust-frame-grow" label={t('adjust.frame.grow')} checked={grow} {disabled} onchange={(on) => (grow = on)} />
-      <p class="hint">{grow ? t('adjust.frame.growHint', { n: cleanFrame(params).width }) : t('adjust.frame.coverHint', { n: cleanFrame(params).width })}</p>
+      <p class="hint" aria-live="polite">{sizeHint}</p>
     {/if}
   {/snippet}
 </AdjustPanel>
