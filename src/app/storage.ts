@@ -16,3 +16,17 @@ export function writeStored(key: string, value: string): void {
     // Storage is a convenience only: the app works the same without it.
   }
 }
+
+/** Removes every key of the app; keys of other origins or prefixes stay. */
+export function clearStored(): void {
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(PREFIX)) keys.push(key);
+    }
+    for (const key of keys) localStorage.removeItem(key);
+  } catch {
+    // Nothing to clear when storage is blocked.
+  }
+}

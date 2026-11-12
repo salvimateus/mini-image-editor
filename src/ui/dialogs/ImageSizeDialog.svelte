@@ -7,6 +7,7 @@
   import type { EditorDoc } from '../../app/doc.svelte.ts';
   import { prepareGenerators } from '../../app/generators.ts';
   import { formatBytes, locale, parseDecimal, t, type TextKey } from '../../app/i18n/index.ts';
+  import { lastResample, saveResample } from '../../app/last-used.ts';
   import * as sfx from '../../app/sfx.ts';
   import { app } from '../../app/state.svelte.ts';
   import { loadShapeFont, renderShapeLayer, scaleShapeSpec, shapeOrigin } from '../../app/shape-render.ts';
@@ -34,7 +35,7 @@
   let widthText = $state('');
   let heightText = $state('');
   let chained = $state(true);
-  let method = $state<ResampleMethod>('auto');
+  let method = $state<ResampleMethod>(lastResample());
 
   const oldW = $derived(app.doc?.width ?? 1);
   const oldH = $derived(app.doc?.height ?? 1);
@@ -45,6 +46,7 @@
     untrack(() => {
       unit = 'px';
       chained = true;
+      method = lastResample();
       widthText = String(oldW);
       heightText = String(oldH);
     });
@@ -187,6 +189,7 @@
     const w = width;
     const h = height;
     const resample = method;
+    saveResample(resample);
     close();
     if (w === doc.width && h === doc.height) {
       sfx.play('tick');

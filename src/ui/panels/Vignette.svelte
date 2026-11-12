@@ -7,6 +7,7 @@
   import type { EditorDoc, LayerPreview } from '../../app/doc.svelte.ts';
   import { isFrameLayer, vignetteImage, vignetteInsertIndex, vignetteLayers, type GeneratedLayer } from '../../app/generators.ts';
   import { t } from '../../app/i18n/index.ts';
+  import { lastVignette, saveVignette } from '../../app/last-used.ts';
   import { createRasterLayer, type Layer, type RasterLayer } from '../../app/layers.ts';
   import { app } from '../../app/state.svelte.ts';
   import { TUNING } from '../../app/tuning/index.ts';
@@ -17,7 +18,8 @@
   const imageIds = new WeakMap<RasterImage, number>();
   let lastImageId = 0;
 
-  let params = $state<VignetteParams>({ ...DEFAULTS });
+  // A new vignette starts from the last applied one; Reset goes back to the defaults.
+  let params = $state<VignetteParams>(lastVignette());
   let preview = $state(true);
   let noHost = $state(false);
   let applying = false;
@@ -63,7 +65,7 @@
   $effect(() => {
     void startKey;
     untrack(() => {
-      params = { ...baseline };
+      params = existing ? { ...baseline } : lastVignette();
       if (ownDoc) setOwnPreview(ownDoc, null);
     });
   });
@@ -151,6 +153,7 @@
       if (app.doc !== target) return false;
       setOwnPreview(target, null);
       const generator = { kind: 'vignette' as const, params: p };
+      saveVignette(p);
       const current = vignetteLayers(target).at(-1) ?? null;
       const activeId = target.activeId;
       if (current) {

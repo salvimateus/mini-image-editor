@@ -3,16 +3,16 @@ import { app } from '../../app/state.svelte.ts';
 import { cropFlashAt, cropSession } from '../../app/tools/crop.ts';
 import { TUNING } from '../../app/tuning/index.ts';
 import type { Rect } from '../../core/types.ts';
-import { checkerPattern, contentRect, easeOutCubic, progress, snap, snapEdge, STAGE_COLORS, type StageHost } from '../stage-renderer.ts';
+import { checkerPattern, contentRect, easeOutCubic, progress, snap, snapEdge, STAGE_COLORS, stageColorsVersion, type StageHost } from '../stage-renderer.ts';
 import type { SceneOverlay } from './types.ts';
 
 const LABEL_FONT = `800 11px 'Nunito Variable', 'Nunito', system-ui, sans-serif`;
 
-let handleSprite: { canvas: HTMLCanvasElement; dpr: number } | null = null;
+let handleSprite: { canvas: HTMLCanvasElement; dpr: number; version: number } | null = null;
 
 /** One crop handle, drawn once for each device pixel ratio and then copied 8 times a frame. */
 function handleImage(dpr: number): HTMLCanvasElement | null {
-  if (handleSprite && handleSprite.dpr === dpr) return handleSprite.canvas;
+  if (handleSprite && handleSprite.dpr === dpr && handleSprite.version === stageColorsVersion()) return handleSprite.canvas;
   const side = TUNING.geometry.crop.handlePx;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = Math.ceil((side + 2) * dpr);
@@ -23,7 +23,7 @@ function handleImage(dpr: number): HTMLCanvasElement | null {
   ctx.fillRect(0, 0, side + 2, side + 2);
   ctx.fillStyle = STAGE_COLORS.handle;
   ctx.fillRect(1.5, 1.5, side - 1, side - 1);
-  handleSprite = { canvas, dpr };
+  handleSprite = { canvas, dpr, version: stageColorsVersion() };
   return canvas;
 }
 

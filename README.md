@@ -101,6 +101,29 @@ There is no project file. You open an image, edit it and export a new file.
 - Push F1 to see all the shortcuts.
 - The keycaps on the screen show as pressed when you push their keys. The bottom of the window shows the last shortcut and its action.
 
+### Themes
+
+- Six color themes: Moss (the default, dark), Mint (light), Graphite (dark), Paper (light), Neon (dark) and Ice cream (light).
+- Click the palette button in the top bar or on the start screen to select a theme.
+- The app remembers the theme for the next start.
+
+### Settings that the app remembers
+
+The app keeps these settings for the next start:
+
+- The theme, and the window size and position.
+- The colors.
+- The settings of the brush and the paint bucket.
+- The text style of the last text.
+- The settings of the shapes and the steps, also the shadow of the steps.
+- The values of the frame and the vignette, and the advanced values of sharpen.
+- The choices of the crop tool and of the canvas size, image size and new image dialogs.
+- The grid and the view switches.
+- The export format and the JPG quality.
+- The mute switch.
+
+The app does not restore the last tool or an open panel. To put all the settings back to their defaults, click "Restore defaults" in the Help menu.
+
 ## Keyboard shortcuts
 
 | Group | Action | Keys |
@@ -178,6 +201,7 @@ Size limits: 16384 px for each side and 50 megapixels for an image. WebP permits
 
 - Your image never leaves your computer. The app opens, edits and exports it locally, with no upload, no account and no telemetry.
 - The text tool downloads fonts from the Google Fonts servers. Each request sends your IP address and the font name to Google. The font Inter is in the app and needs no download.
+- The settings that the app remembers stay in the local storage of the app web view. The app sends none of them.
 
 ## Development
 
@@ -212,6 +236,27 @@ Examine the types of the Svelte and TypeScript files:
 ```sh
 npm run check
 ```
+
+### The `overrides` block of `package.json`
+
+The project does not install a package version that is less than 14 days old. At the first install (2026-11-12), some transitive packages were newer than that. The `overrides` block pins them to older versions:
+
+| Package | Pinned version |
+|---|---|
+| `rolldown` | 1.2.15 |
+| `@rolldown/pluginutils` | 1.0.1 |
+| `tslib` | 2.8.1 |
+| `wasm-feature-detect` | 1.9.0 |
+
+An override forces its version for every parent package. Thus, after an update of Vite, `rolldown` stays at 1.2.15. The build can then fail, or it can miss corrections of the new version.
+
+From 2026-11-26, all the pinned versions are older than 14 days, and you can remove the block:
+
+1. Delete the `overrides` block from `package.json`.
+2. Run `npm install`.
+3. Run `npm audit signatures`.
+4. Run `npm run check`.
+5. Run `npm run build`.
 
 ## Build for Windows
 

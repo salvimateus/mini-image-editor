@@ -13,5 +13,5 @@ export const EXPORT_TUNING = {
   /** The JPEG quality slider. */
   quality: { min: 1, max: 100, step: 1 },
   /** CSS colors of the save confetti: the palette greens and its two derived accents. */
-  confettiColors: ['var(--primary)', 'var(--primary-hover)', 'var(--palette-pale)', 'var(--primary-edge)', 'var(--teal)', 'var(--yellow)'],
+  confettiColors: ['var(--primary)', 'var(--primary-hover)', 'var(--stage-yellow)', 'var(--primary-edge)', 'var(--teal)', 'var(--yellow)'],
 } as const;

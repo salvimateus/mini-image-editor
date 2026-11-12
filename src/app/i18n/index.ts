@@ -9,6 +9,7 @@ import * as select from './select.ts';
 import * as stage from './stage.ts';
 import * as shapes from './shapes.ts';
 import * as text from './text.ts';
+import * as theme from './theme.ts';
 
 const ptBR = {
   ...core.ptBR,
@@ -22,6 +23,7 @@ const ptBR = {
   ...text.ptBR,
   ...shapes.ptBR,
   ...exporting.ptBR,
+  ...theme.ptBR,
 };
 
 export type TextKey = keyof typeof ptBR;
@@ -38,6 +40,7 @@ const en: Record<TextKey, string> = {
   ...text.en,
   ...shapes.en,
   ...exporting.en,
+  ...theme.en,
 };
 
 export const locale: 'pt-BR' | 'en' =

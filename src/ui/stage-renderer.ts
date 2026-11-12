@@ -103,11 +103,17 @@ export type StageColor = keyof typeof STAGE_TOKENS;
 /** Filled from the tokens by loadStageColors() before the first frame. */
 export const STAGE_COLORS = Object.fromEntries(Object.keys(STAGE_TOKENS).map((key) => [key, 'transparent'])) as Record<StageColor, string>;
 
-let colorsLoaded = false;
+let colorsVersion = 0;
+let loadedVersion = -1;
 
-/** Reads the --stage-* tokens once, so the canvas and the CSS share one palette. */
+/** Changes each time the theme changes: a sprite or pattern drawn with STAGE_COLORS keeps it to know when to redraw. */
+export function stageColorsVersion(): number {
+  return colorsVersion;
+}
+
+/** Reads the --stage-* tokens of the current theme, so the canvas and the CSS share one palette. Cheap when nothing changed. */
 export function loadStageColors(): void {
-  if (colorsLoaded || typeof document === 'undefined') return;
+  if (loadedVersion === colorsVersion || typeof document === 'undefined') return;
   const style = getComputedStyle(document.documentElement);
   let found = 0;
   for (const [key, token] of Object.entries(STAGE_TOKENS) as Array<[StageColor, string]>) {
@@ -116,7 +122,13 @@ export function loadStageColors(): void {
     STAGE_COLORS[key] = value;
     found++;
   }
-  colorsLoaded = found > 0;
+  if (found > 0) loadedVersion = colorsVersion;
+}
+
+/** Marks the colors as old and reads them again from the new theme. The theme service calls it. */
+export function refreshStageColors(): void {
+  colorsVersion++;
+  loadStageColors();
 }
 
 /** The colors of sparks and confetti: the accents of the theme. */
@@ -149,12 +161,12 @@ export function contentRect(camera: Camera): Rect {
   return { x: camera.panX, y: camera.panY, w: camera.contentW * camera.zoom, h: camera.contentH * camera.zoom };
 }
 
-const checkerCache = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
+const checkerCache = new WeakMap<CanvasRenderingContext2D, { pattern: CanvasPattern; version: number }>();
 
 /** A checkerboard of TUNING.stage.checkerPx CSS pixel squares, for transparent areas. */
 export function checkerPattern(ctx: CanvasRenderingContext2D): CanvasPattern | string {
   const cached = checkerCache.get(ctx);
-  if (cached) return cached;
+  if (cached && cached.version === colorsVersion) return cached.pattern;
   const side = TUNING.stage.checkerPx;
   const tile = document.createElement('canvas');
   tile.width = tile.height = side * 2;
@@ -167,7 +179,7 @@ export function checkerPattern(ctx: CanvasRenderingContext2D): CanvasPattern | s
   tileCtx.fillRect(side, side, side, side);
   const pattern = ctx.createPattern(tile, 'repeat');
   if (!pattern) return STAGE_COLORS.checkerA;
-  checkerCache.set(ctx, pattern);
+  checkerCache.set(ctx, { pattern, version: colorsVersion });
   return pattern;
 }
 

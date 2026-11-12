@@ -5,6 +5,7 @@
   import { Camera } from './camera.ts';
   import { watchCanvasBox, type CanvasBox } from './canvas-box.ts';
   import { ParticleField } from './particles.ts';
+  import { onThemeChange } from '../app/theme.svelte.ts';
   import { loadStageColors, type Scene, type StageApi, type StageHost, type StagePointer } from './stage-renderer.ts';
 
   interface Props {
@@ -240,9 +241,16 @@
     const stopBox = watchCanvasBox(canvas, resize, TUNING.stage.maxDpr);
     // Wheel needs passive: false, or preventDefault cannot stop the page from zooming or scrolling.
     wrap.addEventListener('wheel', onWheel, { passive: false });
+    // The particle sprite and every canvas color belong to the old theme.
+    const stopTheme = onThemeChange(() => {
+      particles.clear();
+      invalidate();
+      invalidateFx();
+    });
     onready?.(api);
     return () => {
       onready?.(null);
+      stopTheme();
       stopBox();
       motion.removeEventListener('change', applyMotion);
       wrap.removeEventListener('wheel', onWheel);

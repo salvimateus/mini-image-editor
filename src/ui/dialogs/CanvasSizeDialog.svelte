@@ -11,6 +11,7 @@
   import { untrack, type Component } from 'svelte';
   import { applyStageRect, stageFillColor, stageSizeProblem, type StageFill } from '../../app/actions/geometry.ts';
   import { locale, parseDecimal, t, type TextKey } from '../../app/i18n/index.ts';
+  import { lastCanvasFill, saveCanvasFill } from '../../app/last-used.ts';
   import * as sfx from '../../app/sfx.ts';
   import { app } from '../../app/state.svelte.ts';
   import { flashStageOutline } from '../../app/tools/crop.ts';
@@ -59,7 +60,7 @@
   let widthText = $state('');
   let heightText = $state('');
   let anchor = $state({ x: 1, y: 1 });
-  let fill = $state<StageFill>('transparent');
+  let fill = $state<StageFill>(lastCanvasFill());
   let cells = $state<HTMLButtonElement[]>([]);
 
   const oldW = $derived(app.doc?.width ?? 1);
@@ -71,6 +72,7 @@
     untrack(() => {
       unit = 'px';
       relative = false;
+      fill = lastCanvasFill();
       widthText = String(oldW);
       heightText = String(oldH);
     });
@@ -177,6 +179,7 @@
       return;
     }
     const color = stageFillColor(fill);
+    saveCanvasFill(fill);
     close();
     try {
       const done = await applyStageRect(doc, rect, color, 'geometry.history.canvasSize');

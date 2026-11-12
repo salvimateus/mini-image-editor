@@ -5,7 +5,7 @@ import type { StagePointer } from '../../ui/stage-renderer.ts';
 import type { EditorDoc } from '../doc.svelte.ts';
 import * as sfx from '../sfx.ts';
 import { app } from '../state.svelte.ts';
-import { readStored, writeStored } from '../storage.ts';
+import { onPrefsReset, readPrefs, savePrefs } from '../prefs.ts';
 import { TUNING } from '../tuning/index.ts';
 import type { Hint, ToolController, ToolId } from './types.ts';
 
@@ -16,6 +16,7 @@ export interface SelectSettings { mode: MaskOp; feather: number; tolerance: numb
 export const SELECT_MODES: readonly MaskOp[] = ['replace', 'add', 'subtract', 'intersect'];
 
 const STORE_KEY = 'select';
+const STORE_VERSION = 1;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -33,23 +34,19 @@ function cleanSettings(value: Partial<Record<keyof SelectSettings, unknown>>, ba
 
 function loadSettings(): SelectSettings {
   const base: SelectSettings = { ...TUNING.select.defaults };
-  const text = readStored(STORE_KEY);
-  if (!text) return base;
-  try {
-    const value: unknown = JSON.parse(text);
-    return value && typeof value === 'object' ? cleanSettings(value as Record<string, unknown>, base) : base;
-  } catch {
-    return base;
-  }
+  const stored = readPrefs(STORE_KEY, STORE_VERSION);
+  return stored ? cleanSettings(stored, base) : base;
 }
 
 /** The options of the selection tools (options bar), stored. */
 export const selectSettings = writable<SelectSettings>(loadSettings());
 
+onPrefsReset(() => selectSettings.set({ ...TUNING.select.defaults }));
+
 export function setSelectSettings(patch: Partial<SelectSettings>): void {
   const next = cleanSettings(patch, get(selectSettings));
   selectSettings.set(next);
-  writeStored(STORE_KEY, JSON.stringify(next));
+  savePrefs(STORE_KEY, STORE_VERSION, next);
 }
 
 /** True while a selection drag or a move drag runs on the stage: the floating bars hide. */

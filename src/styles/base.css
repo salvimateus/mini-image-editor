@@ -42,6 +42,20 @@
     scrollbar-color: var(--line-strong) transparent;
   }
 
+  /* A short cross-fade of the colors right after a theme pick; theme.svelte.ts sets the class for that time only. */
+  :root.theme-shift,
+  :root.theme-shift :is(*, *::before, *::after) {
+    transition:
+      background-color 280ms var(--ease-sym),
+      color 280ms var(--ease-sym),
+      border-color 280ms var(--ease-sym),
+      outline-color 280ms var(--ease-sym),
+      box-shadow 280ms var(--ease-sym),
+      fill 280ms var(--ease-sym),
+      stroke 280ms var(--ease-sym) !important;
+    transition-delay: 0ms !important;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

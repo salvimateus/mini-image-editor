@@ -1,6 +1,8 @@
 import { fitRatio } from '../aspect.ts';
 import { applyStageRect, stageFillColor, stageSizeProblem, type StageFill } from '../actions/geometry.ts';
 import type { EditorDoc } from '../doc.svelte.ts';
+import { CROP_DEFAULTS, lastCrop, saveCrop } from '../last-used.ts';
+import { onPrefsReset } from '../prefs.ts';
 import { snapPoint, type SnapTarget } from '../snapping.ts';
 import { clearSnapFeedback, liveSnapTargets, showSnapHits, snapBoxLive, snapThreshold } from '../snap-feedback.svelte.ts';
 import * as sfx from '../sfx.ts';
@@ -67,9 +69,9 @@ let active = false;
 /** The crop request that the session used last, so that the same request is not used twice. */
 let usedRequest: CropRequest | null = null;
 const listeners = new Set<() => void>();
-/** Kept between sessions: the user picks them once. */
-let lastFill: CropFill = 'transparent';
-let lastMode: CropMode = 'crop';
+/** Kept between sessions and stored: the user picks them once. */
+let { fill: lastFill, mode: lastMode } = lastCrop();
+onPrefsReset(() => ({ fill: lastFill, mode: lastMode } = CROP_DEFAULTS));
 /** performance.now() of the last stage change, for the flash of the new stage outline; -1 = none. */
 let flashAt = -1;
 
@@ -271,6 +273,7 @@ export const cropSession = {
     const s = current();
     if (!s) return;
     lastMode = mode;
+    saveCrop({ mode, fill: lastFill });
     s.mode = mode;
     const ratio = s.ratio ?? { w: s.box.w, h: s.box.h };
     s.box = fitRatio(s.doc.width, s.doc.height, ratio.w, ratio.h, mode);
@@ -280,6 +283,7 @@ export const cropSession = {
 
   setFill(fill: CropFill): void {
     lastFill = fill;
+    saveCrop({ mode: lastMode, fill });
     const s = current();
     if (s) s.fill = fill;
     sfx.play('tick');

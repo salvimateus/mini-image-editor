@@ -5,7 +5,7 @@ import type { EditorDoc } from '../doc.svelte.ts';
 import type { ShapeLayer } from '../layers.ts';
 import { renderShapeLayer, shapeOrigin } from '../shape-render.ts';
 import { app } from '../state.svelte.ts';
-import { readStored, writeStored } from '../storage.ts';
+import { onPrefsReset, readPrefs, savePrefs } from '../prefs.ts';
 import { TUNING } from '../tuning/index.ts';
 
 /** What the Shapes tool draws next. */
@@ -21,6 +21,7 @@ export interface ShapeSettings { kind: ShapeKindId; box: BoxSettings; arrow: Arr
 type StepSpec = Extract<ShapeSpec, { kind: 'step' }>;
 
 const STORE_KEY = 'shapes.settings';
+const STORE_VERSION = 1;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -84,13 +85,7 @@ function cleanSettings(value: unknown): ShapeSettings {
 }
 
 function loadSettings(): ShapeSettings {
-  const text = readStored(STORE_KEY);
-  if (!text) return cleanSettings({});
-  try {
-    return cleanSettings(JSON.parse(text));
-  } catch {
-    return cleanSettings({});
-  }
+  return cleanSettings(readPrefs(STORE_KEY, STORE_VERSION) ?? {});
 }
 
 /** The kind id of a shape spec, or 'step'. */
@@ -119,7 +114,12 @@ class ShapeSettingsStore {
 
   private patch(update: (settings: ShapeSettings) => ShapeSettings): void {
     this.value = cleanSettings(update(this.value));
-    writeStored(STORE_KEY, JSON.stringify(this.value));
+    savePrefs(STORE_KEY, STORE_VERSION, this.value);
+  }
+
+  /** The defaults of every setting; the typed step number stays, it belongs to the document. */
+  resetSettings(): void {
+    this.value = cleanSettings({});
   }
 
   // ----- the active shape -----
@@ -282,6 +282,7 @@ class ShapeSettingsStore {
 }
 
 export const shapeSettings = new ShapeSettingsStore();
+onPrefsReset(() => shapeSettings.resetSettings());
 
 // The options follow the active shape layer, and the handles redraw when another layer becomes active.
 let followed: { doc: EditorDoc; id: number | null } | null = null;

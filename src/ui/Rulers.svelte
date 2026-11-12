@@ -4,9 +4,11 @@
   import { runAction } from '../app/actions/index.ts';
   import type { GridSpec } from '../app/doc.svelte.ts';
   import { t } from '../app/i18n/index.ts';
+  import { saveGrid } from '../app/last-used.ts';
   import * as sfx from '../app/sfx.ts';
   import { clearSnapFeedback, snapValueLive } from '../app/snap-feedback.svelte.ts';
   import { app } from '../app/state.svelte.ts';
+  import { theme } from '../app/theme.svelte.ts';
   import { TUNING } from '../app/tuning/index.ts';
   import ToggleSwitch from './base/ToggleSwitch.svelte';
   import { tooltip } from './base/tooltip.ts';
@@ -207,6 +209,11 @@
     schedule();
   });
 
+  $effect(() => {
+    void theme.current;
+    schedule();
+  });
+
   onMount(() => {
     const observer = new ResizeObserver((entries) => {
       const box = entries[0]?.contentRect;
@@ -321,6 +328,7 @@
     const doc = app.doc;
     if (!doc) return;
     doc.setGrid({ ...doc.grid, ...patch });
+    saveGrid(doc.grid);
     if (!app.view.grid) app.setView({ grid: true });
     app.stage?.invalidateFx();
   }

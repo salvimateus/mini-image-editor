@@ -1,6 +1,9 @@
 import type { ToolId } from '../tools/types.ts';
+import { t } from '../i18n/index.ts';
+import { resetPrefs } from '../prefs.ts';
 import { app } from '../state.svelte.ts';
 import * as sfx from '../sfx.ts';
+import { DEFAULT_THEME, setTheme } from '../theme.svelte.ts';
 import { TUNING } from '../tuning/index.ts';
 import { pickImageFiles } from './pick-files.ts';
 import type { ActionHandler, ActionHandlers, CoreActionId } from './types.ts';
@@ -21,6 +24,19 @@ function zoom(run: () => void): ActionHandler {
     run();
     sfx.play('tick');
   };
+}
+
+/** After a confirmation, every stored setting goes back to its default at once; the open image stays as it is. */
+async function resetSettings(): Promise<void> {
+  const ok = await app.confirm(t('chrome.resetSettings.title'), t('chrome.resetSettings.body'), t('chrome.resetSettings.confirm'));
+  if (!ok) {
+    sfx.play('cancel');
+    return;
+  }
+  setTheme(DEFAULT_THEME);
+  resetPrefs();
+  sfx.play('apply');
+  app.toast(t('chrome.resetSettings.done'), 'success');
 }
 
 /** The actions of the chrome: files, history, tools, view and colors. */
@@ -73,4 +89,5 @@ export const coreActions: ActionHandlers<CoreActionId> = {
   'color.swap': () => app.swapColors(),
   'color.reset': () => app.resetColors(),
   'help.shortcuts': () => app.openDialog(app.dialog === 'shortcuts' ? 'none' : 'shortcuts'),
+  'help.resetSettings': () => void resetSettings(),
 };

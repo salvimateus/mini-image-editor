@@ -5,6 +5,7 @@
   import { intersectRect } from '../../core/raster.ts';
   import type { AdjustOp, Rect, SharpenParams } from '../../core/types.ts';
   import { t } from '../../app/i18n/index.ts';
+  import { lastSharpen, saveSharpen } from '../../app/last-used.ts';
   import * as sfx from '../../app/sfx.ts';
   import { app } from '../../app/state.svelte.ts';
   import { TUNING } from '../../app/tuning/index.ts';
@@ -17,7 +18,8 @@
   const DEFAULTS: SharpenParams = { steps: 0, radius: limits.radius.default, threshold: limits.threshold.default };
   const meterSteps = Array.from({ length: limits.maxSteps }, (_, i) => i + 1);
 
-  let params = $state<SharpenParams>({ ...DEFAULTS });
+  // The advanced values start from the last applied ones; the steps always start at 0.
+  let params = $state<SharpenParams>({ steps: 0, ...lastSharpen() });
   let bump = $state(0);
 
   const op = $derived<AdjustOp | null>(params.steps === 0 ? null : { kind: 'sharpen', params: { ...params } });
@@ -80,7 +82,7 @@
   }
 </script>
 
-<AdjustPanel titleId="panel-sharpen-title" title={t('action.adjust.sharpen')} label="adjust.history.sharpen" {op} {region} {canReset} onreset={reset}>
+<AdjustPanel titleId="panel-sharpen-title" title={t('action.adjust.sharpen')} label="adjust.history.sharpen" {op} {region} {canReset} onreset={reset} onapplied={() => saveSharpen({ radius: params.radius, threshold: params.threshold })}>
   {#snippet children({ disabled })}
     <div class="stepper">
       <button

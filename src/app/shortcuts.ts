@@ -53,7 +53,8 @@ export type ActionId =
   | 'paint.hardnessUp'
   | 'color.swap'
   | 'color.reset'
-  | 'help.shortcuts';
+  | 'help.shortcuts'
+  | 'help.resetSettings';
 
 export type ActionSource = 'key' | 'pointer';
 
@@ -148,6 +149,7 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   { id: 'guides.thirds', combos: [], label: 'action.guides.thirds', group: 'view' },
   { id: 'guides.clear', combos: [], label: 'action.guides.clear', group: 'view' },
   { id: 'help.shortcuts', combos: [key('F1')], label: 'action.help.shortcuts', group: 'view', whileTyping: true },
+  { id: 'help.resetSettings', combos: [], label: 'action.help.resetSettings', group: 'view' },
 ];
 
 export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = ['file', 'edit', 'tools', 'image', 'adjust', 'select', 'layer', 'view'];

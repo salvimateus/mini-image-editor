@@ -8,9 +8,10 @@ import { EditorDoc } from './doc.svelte.ts';
 import { ImageEngine } from './engine.ts';
 import { cleanBaseName } from './file-name.ts';
 import { t } from './i18n/index.ts';
+import { lastGrid } from './last-used.ts';
 import { createRasterLayer } from './layers.ts';
+import { colorField, onPrefsReset, readJson, readPrefs, savePrefs } from './prefs.ts';
 import * as sfx from './sfx.ts';
-import { readStored, writeStored } from './storage.ts';
 import { TOOLS } from './tools/index.ts';
 import type { ToolId } from './tools/types.ts';
 import { TUNING } from './tuning/index.ts';
@@ -51,23 +52,15 @@ const BRUSH_TOOLS: readonly BrushToolId[] = ['brush', 'pencil', 'eraser', 'clone
 const BLACK: Rgba = { r: 0, g: 0, b: 0, a: 255 };
 const WHITE: Rgba = { r: 255, g: 255, b: 255, a: 255 };
 
+const COLORS_KEY = 'colors';
+const PREFS_VERSION = 1;
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
 function finite(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
-
-function readJson(key: string): Record<string, unknown> | null {
-  const text = readStored(key);
-  if (!text) return null;
-  try {
-    const value: unknown = JSON.parse(text);
-    return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
-  } catch {
-    return null;
-  }
 }
 
 function cleanBrush(value: Partial<BrushSettings>, base: BrushSettings): BrushSettings {
@@ -79,8 +72,8 @@ function cleanBrush(value: Partial<BrushSettings>, base: BrushSettings): BrushSe
   };
 }
 
-function loadBrushes(): Record<BrushToolId, BrushSettings> {
-  const stored = readJson('brush');
+/** The stored brush settings, or the defaults when `stored` is null. */
+function loadBrushes(stored = readPrefs('brush', PREFS_VERSION)): Record<BrushToolId, BrushSettings> {
   const out = {} as Record<BrushToolId, BrushSettings>;
   for (const id of BRUSH_TOOLS) {
     const base = TUNING.ui.brushDefaults[id];
@@ -98,7 +91,7 @@ function cleanBucket(value: Partial<BucketSettings>, base: BucketSettings): Buck
 }
 
 function loadView(): ViewFlags {
-  const stored = readJson('view') ?? {};
+  const stored = readPrefs('view', PREFS_VERSION) ?? {};
   const out = { ...TUNING.ui.viewDefaults } as ViewFlags;
   for (const key of Object.keys(out) as (keyof ViewFlags)[]) {
     if (typeof stored[key] === 'boolean') out[key] = stored[key] as boolean;
@@ -128,15 +121,18 @@ function sameColor(a: Rgba, b: Rgba): boolean {
   return a.r === b.r && a.g === b.g && a.b === b.b;
 }
 
-function loadRecent(): Rgba[] {
-  const text = readStored('colors');
-  if (!text) return [];
-  try {
-    const value: unknown = JSON.parse(text);
-    return Array.isArray(value) ? value.filter(isRgba).map(opaque).slice(0, TUNING.ui.recentColors) : [];
-  } catch {
-    return [];
-  }
+interface StoredColors { fg: Rgba; bg: Rgba; recent: Rgba[] }
+
+function cleanRecent(value: unknown): Rgba[] {
+  return Array.isArray(value) ? value.filter(isRgba).map(opaque).slice(0, TUNING.ui.recentColors) : [];
+}
+
+/** The foreground, background and recent colors. An old stored list holds only the recent colors. */
+function loadColors(): StoredColors {
+  const raw = readJson(COLORS_KEY);
+  if (Array.isArray(raw)) return { fg: BLACK, bg: WHITE, recent: cleanRecent(raw) };
+  const stored = readPrefs(COLORS_KEY, PREFS_VERSION);
+  return { fg: colorField(stored?.fg, BLACK, true), bg: colorField(stored?.bg, WHITE, true), recent: cleanRecent(stored?.recent) };
 }
 
 /** The document name of a file: the file name without its extension. */
@@ -177,9 +173,9 @@ class AppState {
   tool = $state<ToolId>('move');
   fg = $state.raw<Rgba>(BLACK);
   bg = $state.raw<Rgba>(WHITE);
-  recentColors = $state.raw<readonly Rgba[]>(loadRecent());
+  recentColors = $state.raw<readonly Rgba[]>([]);
   brush = $state.raw<Record<BrushToolId, BrushSettings>>(loadBrushes());
-  bucket = $state.raw<BucketSettings>(cleanBucket(readJson('bucket') ?? {}, TUNING.ui.bucketDefaults));
+  bucket = $state.raw<BucketSettings>(cleanBucket(readPrefs('bucket', PREFS_VERSION) ?? {}, TUNING.ui.bucketDefaults));
   view = $state.raw<ViewFlags>(loadView());
   panel = $state<PanelId>('none');
   dialog = $state<DialogId>('none');
@@ -198,13 +194,35 @@ class AppState {
   private historyToast = 0;
 
   constructor() {
-    const stored = readJson('export');
+    const colors = loadColors();
+    this.fg = colors.fg;
+    this.bg = colors.bg;
+    this.recentColors = colors.recent;
+    const stored = readPrefs('export', PREFS_VERSION);
     const defaults = TUNING.ui.exportDefaults;
     this.lastFormat = isFormat(stored?.format) ? stored.format : defaults.format;
     this.jpegQuality = cleanQuality(stored?.jpegQuality, defaults.jpegQuality);
     this.engine.onProgress((ratio) => {
       if (this.busyCount > 0) this.progress = ratio;
     });
+    onPrefsReset(() => this.resetSettings());
+  }
+
+  /** The settings of the store go back to their defaults; `resetPrefs` empties the storage after it. */
+  private resetSettings(): void {
+    this.fg = BLACK;
+    this.bg = WHITE;
+    this.recentColors = [];
+    this.brush = loadBrushes(null);
+    this.bucket = { ...TUNING.ui.bucketDefaults };
+    this.view = { ...TUNING.ui.viewDefaults };
+    this.lastFormat = TUNING.ui.exportDefaults.format;
+    this.jpegQuality = TUNING.ui.exportDefaults.jpegQuality;
+    if (this.muted) this.toggleMute();
+  }
+
+  private saveColors(): void {
+    savePrefs(COLORS_KEY, PREFS_VERSION, { fg: this.fg, bg: this.bg, recent: this.recentColors });
   }
 
   get busy(): boolean {
@@ -293,20 +311,24 @@ class AppState {
   setFg(color: Rgba, remember = true): void {
     this.fg = opaque(color);
     if (remember) this.remember(this.fg);
+    else this.saveColors();
   }
 
   setBg(color: Rgba): void {
     this.bg = opaque(color);
+    this.saveColors();
   }
 
   swapColors(): void {
     [this.fg, this.bg] = [this.bg, this.fg];
+    this.saveColors();
     sfx.play('tick');
   }
 
   resetColors(): void {
     this.fg = BLACK;
     this.bg = WHITE;
+    this.saveColors();
     sfx.play('tick');
   }
 
@@ -314,24 +336,24 @@ class AppState {
   remember(color: Rgba): void {
     const next = [opaque(color), ...this.recentColors.filter((entry) => !sameColor(entry, color))].slice(0, TUNING.ui.recentColors);
     this.recentColors = next;
-    writeStored('colors', JSON.stringify(next));
+    this.saveColors();
   }
 
   setBrush(tool: BrushToolId, patch: Partial<BrushSettings>): BrushSettings {
     const next = cleanBrush({ ...this.brush[tool], ...patch }, this.brush[tool]);
     this.brush = { ...this.brush, [tool]: next };
-    writeStored('brush', JSON.stringify(this.brush));
+    savePrefs('brush', PREFS_VERSION, this.brush);
     return next;
   }
 
   setBucket(patch: Partial<BucketSettings>): void {
     this.bucket = cleanBucket({ ...this.bucket, ...patch }, this.bucket);
-    writeStored('bucket', JSON.stringify(this.bucket));
+    savePrefs('bucket', PREFS_VERSION, this.bucket);
   }
 
   setView(patch: Partial<ViewFlags>): void {
     this.view = { ...this.view, ...patch };
-    writeStored('view', JSON.stringify(this.view));
+    savePrefs('view', PREFS_VERSION, this.view);
   }
 
   openPanel(id: PanelId): void {
@@ -345,7 +367,7 @@ class AppState {
   setExportPrefs(patch: { format?: ExportFormat; jpegQuality?: number }): void {
     if (patch.format !== undefined && isFormat(patch.format)) this.lastFormat = patch.format;
     if (patch.jpegQuality !== undefined) this.jpegQuality = cleanQuality(patch.jpegQuality, this.jpegQuality);
-    writeStored('export', JSON.stringify({ format: this.lastFormat, jpegQuality: this.jpegQuality }));
+    savePrefs('export', PREFS_VERSION, { format: this.lastFormat, jpegQuality: this.jpegQuality });
   }
 
   setWeight(weight: WeightState): void {
@@ -379,6 +401,8 @@ class AppState {
     this.stagePick = null;
     this.cropRequest = null;
     this.weight = { bytes: null, pending: false };
+    // A new document starts with the grid of the last one.
+    doc?.setGrid(lastGrid());
     this.doc = doc;
     if (doc) TOOLS[this.tool]?.activate?.();
   }

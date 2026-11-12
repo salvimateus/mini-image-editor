@@ -4,15 +4,40 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Mini Image Editor makes quick image edits on your computer." />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="dark light" />
     <title>Mini Image Editor</title>
     <link rel="icon" type="image/svg+xml" href="/app-icon.svg" />
+    <!-- Sets the stored theme before the first paint. A file, not an inline script: the desktop CSP blocks inline code. -->
+    <script src="/theme-init.js"></script>
     <!-- The layer order must come before any other stylesheet, including the component styles. -->
     <style>
       @layer reset, base, components, utilities;
+      /* The first paint, before the token stylesheets load. Each value repeats the --bg of its theme. */
+      :root {
+        --boot-bg: #202734;
+        color-scheme: dark;
+      }
+      :root[data-theme='menta'] {
+        --boot-bg: oklch(0.96 0.035 129);
+        color-scheme: light;
+      }
+      :root[data-theme='grafite'] {
+        --boot-bg: oklch(0.245 0.004 260);
+      }
+      :root[data-theme='papel'] {
+        --boot-bg: oklch(0.97 0.008 85);
+        color-scheme: light;
+      }
+      :root[data-theme='neon'] {
+        --boot-bg: oklch(0.2 0.035 285);
+      }
+      :root[data-theme='sorvete'] {
+        --boot-bg: oklch(0.965 0.022 345);
+        color-scheme: light;
+      }
       html,
       body {
-        background: #202734;
+        background: var(--bg, var(--boot-bg));
       }
     </style>
   </head>

@@ -9,6 +9,7 @@
   import type { EditorDoc, LayerPreview } from '../../app/doc.svelte.ts';
   import { frameImage, frameLayers, prepareGenerators, type FrameLayer } from '../../app/generators.ts';
   import { t } from '../../app/i18n/index.ts';
+  import { lastFrame, saveFrame } from '../../app/last-used.ts';
   import { createRasterLayer, type Layer, type RasterLayer } from '../../app/layers.ts';
   import { app } from '../../app/state.svelte.ts';
   import { TUNING } from '../../app/tuning/index.ts';
@@ -22,8 +23,10 @@
   const imageIds = new WeakMap<RasterImage, number>();
   let lastImageId = 0;
 
-  let params = $state<FrameParams>({ width: DEFAULTS.width, color: { ...DEFAULTS.color } });
-  let grow = $state<boolean>(tuning.growDefault);
+  // A new frame starts from the last applied one; Reset goes back to the defaults.
+  const start = lastFrame();
+  let params = $state<FrameParams>(start.params);
+  let grow = $state<boolean>(start.grow);
   let preview = $state(true);
   let applying = false;
   let ownPreview: LayerPreview | null = null;
@@ -78,7 +81,8 @@
   $effect(() => {
     void startKey;
     untrack(() => {
-      params = { width: baseline.width, color: { ...baseline.color } };
+      const from = existing ? baseline : lastFrame().params;
+      params = { width: from.width, color: { ...from.color } };
       if (ownDoc) setOwnPreview(ownDoc, null);
     });
   });
@@ -173,6 +177,7 @@
       setOwnPreview(target, null);
       const image = frameImage(w, h, p);
       const generator = { kind: 'frame' as const, params: { width: p.width, color: { ...p.color } } };
+      saveFrame(p, current ? lastFrame().grow : grow);
       const activeId = target.activeId;
       if (current) {
         const index = target.indexOf(current.id);

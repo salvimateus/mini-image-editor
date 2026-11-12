@@ -12,6 +12,7 @@
   import { TUNING } from '../../app/tuning/index.ts';
   import type { StagePointer } from '../stage-renderer.ts';
   import AdjustPanel from './AdjustPanel.svelte';
+  import { theme } from '../../app/theme.svelte.ts';
 
   type Channel = LevelsParams['channel'];
   type Handle = 'inBlack' | 'gamma' | 'inWhite' | 'outBlack' | 'outWhite';
@@ -68,6 +69,7 @@
     const target = canvas;
     const values = bins;
     void params.channel;
+    void theme.current;
     if (!target) return;
     drawHistogram(target, values);
   });

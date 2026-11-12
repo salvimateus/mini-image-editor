@@ -39,6 +39,8 @@
     onbegin?: (histogram: Histogram) => void;
     canReset: boolean;
     onreset: () => void;
+    /** Filter mode: the op is in the document, for a panel that stores its last values. */
+    onapplied?: () => void;
     /** Generator mode: the child owns the preview; `apply` returns true when the document changed. */
     generator?: { apply(): Promise<boolean> } | null;
     /** Generator mode only. */
@@ -61,6 +63,7 @@
     onbegin,
     canReset,
     onreset,
+    onapplied,
     generator = null,
     canApply: generatorCanApply = false,
     blocked: generatorBlocked = null,
@@ -288,6 +291,7 @@
       if (token !== serial || app.doc !== target || !target.layer(id)) return;
       closing = true;
       target.replaceImage(id, image, null, label);
+      onapplied?.();
       celebrate(target);
       close();
     } catch (error) {

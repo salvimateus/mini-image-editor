@@ -1,14 +1,16 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right';
   import { PARAMS } from '../../core/params/index.ts';
   import type { Rgba } from '../../core/types.ts';
   import { app } from '../../app/state.svelte.ts';
   import { t, type TextKey } from '../../app/i18n/index.ts';
+  import { lastNewImage, saveNewImage, type NewImageBackground } from '../../app/last-used.ts';
   import * as sfx from '../../app/sfx.ts';
   import { TUNING } from '../../app/tuning/index.ts';
   import Dialog from '../base/Dialog.svelte';
 
-  type Background = 'transparent' | 'white' | 'black';
+  type Background = NewImageBackground;
 
   const PRESET_NAMES: readonly TextKey[] = ['newImage.preset.square', 'newImage.preset.landscape', 'newImage.preset.story', 'newImage.preset.icon'];
   const BACKGROUNDS: readonly { id: Background; label: TextKey; fill: Rgba | null }[] = [
@@ -17,10 +19,21 @@
     { id: 'black', label: 'newImage.bg.black', fill: { r: 0, g: 0, b: 0, a: 255 } },
   ];
 
-  const first = TUNING.ui.newImagePresets[0];
-  let widthText = $state(String(first.w));
-  let heightText = $state(String(first.h));
-  let background = $state<Background>('white');
+  const start = lastNewImage();
+  let widthText = $state(String(start.width));
+  let heightText = $state(String(start.height));
+  let background = $state<Background>(start.background);
+
+  // Each opening starts from the last created image.
+  $effect(() => {
+    if (app.dialog !== 'new-image') return;
+    untrack(() => {
+      const last = lastNewImage();
+      widthText = String(last.width);
+      heightText = String(last.height);
+      background = last.background;
+    });
+  });
 
   const width = $derived(parseSide(widthText));
   const height = $derived(parseSide(heightText));
@@ -60,6 +73,7 @@
       return;
     }
     const fill = BACKGROUNDS.find((entry) => entry.id === background)?.fill ?? null;
+    saveNewImage({ width, height, background });
     close();
     void app.newDocument(width, height, fill);
   }

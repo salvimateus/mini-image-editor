@@ -11,6 +11,7 @@
   import { keyLabels } from '../app/shortcuts.ts';
   import Burst from './base/Burst.svelte';
   import Keys from './base/Keys.svelte';
+  import ThemePicker from './ThemePicker.svelte';
   import { tooltip } from './base/tooltip.ts';
 
   interface Props {
@@ -21,7 +22,7 @@
 
   let { onfiles, onnew }: Props = $props();
 
-  const BURST_COLORS = ['var(--primary)', 'var(--palette-pale)', 'var(--primary-hover)', 'var(--primary-edge)', 'var(--text)'];
+  const BURST_COLORS = ['var(--primary)', 'var(--stage-yellow)', 'var(--stage-teal)', 'var(--stage-pink)', 'var(--text)'];
   const SHAKE: Keyframe[] = [
     { transform: 'translateX(0)' },
     { transform: 'translateX(-12px)' },
@@ -93,6 +94,8 @@
 <svelte:window onpaste={onPaste} />
 
 <section class="welcome" aria-labelledby="welcome-title" ondrop={onDrop}>
+  <div class="welcome-theme"><ThemePicker /></div>
+
   <div class="hero">
     <img class="logo" src={logoUrl} alt={t('app.logoAlt')} width="96" height="96" />
     <h1 id="welcome-title" class="title">{t('welcome.title')}</h1>
@@ -144,6 +147,7 @@
 <style>
   @layer components {
     .welcome {
+      position: relative;
       display: grid;
       place-content: center;
       justify-items: center;
@@ -154,6 +158,13 @@
       background-image: radial-gradient(var(--hairline) 1px, transparent 1.5px);
       background-size: 24px 24px;
       background-position: center;
+    }
+
+    .welcome-theme {
+      position: absolute;
+      top: var(--space-3);
+      right: var(--space-3);
+      z-index: 2;
     }
 
     .hero {

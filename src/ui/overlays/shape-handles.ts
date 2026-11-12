@@ -1,16 +1,16 @@
 import { draftSprite, handleView, handlesDown, handlesMove, handlesUp, type ShapeSprite } from '../../app/tools/shape-edit.ts';
 import { TUNING } from '../../app/tuning/index.ts';
 import type { Camera } from '../camera.ts';
-import { contentRect, snap, snapEdge, STAGE_COLORS } from '../stage-renderer.ts';
+import { contentRect, snap, snapEdge, STAGE_COLORS, stageColorsVersion } from '../stage-renderer.ts';
 import type { SceneOverlay } from './types.ts';
 
-let squareSprite: { canvas: HTMLCanvasElement; dpr: number } | null = null;
-let roundSprite: { canvas: HTMLCanvasElement; dpr: number } | null = null;
+let squareSprite: { canvas: HTMLCanvasElement; dpr: number; version: number } | null = null;
+let roundSprite: { canvas: HTMLCanvasElement; dpr: number; version: number } | null = null;
 
 /** One handle, drawn once for each device pixel ratio and then copied for each handle. */
 function handleImage(dpr: number, round: boolean): HTMLCanvasElement | null {
   const cached = round ? roundSprite : squareSprite;
-  if (cached && cached.dpr === dpr) return cached.canvas;
+  if (cached && cached.dpr === dpr && cached.version === stageColorsVersion()) return cached.canvas;
   const side = TUNING.shapes.handle.sizePx + 2;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = Math.ceil(side * dpr);
@@ -32,7 +32,7 @@ function handleImage(dpr: number, round: boolean): HTMLCanvasElement | null {
     ctx.fillStyle = STAGE_COLORS.handle;
     ctx.fillRect(1.5, 1.5, side - 3, side - 3);
   }
-  const entry = { canvas, dpr };
+  const entry = { canvas, dpr, version: stageColorsVersion() };
   if (round) roundSprite = entry;
   else squareSprite = entry;
   return canvas;

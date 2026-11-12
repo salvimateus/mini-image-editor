@@ -11,6 +11,7 @@
   import { keyLabels, type ActionId } from '../app/shortcuts.ts';
   import { tooltip } from './base/tooltip.ts';
   import Menu from './Menu.svelte';
+  import ThemePicker from './ThemePicker.svelte';
 
   const MENUS: readonly { id: string; label: TextKey; items: readonly (ActionId | null)[] }[] = [
     { id: 'file', label: 'menu.file', items: ['file.new', 'file.open', null, 'layer.addImage', null, 'file.export', null, 'file.close'] },
@@ -60,7 +61,7 @@
         'view.mute',
       ],
     },
-    { id: 'help', label: 'menu.help', items: ['help.shortcuts'] },
+    { id: 'help', label: 'menu.help', items: ['help.shortcuts', null, 'help.resetSettings'] },
   ];
 
   let openMenu = $state<string | null>(null);
@@ -137,6 +138,7 @@
     >
       {#if app.muted}<VolumeX size={20} />{:else}<Volume2 size={20} />{/if}
     </button>
+    <ThemePicker inBar />
     <button
       type="button"
       class="btn btn-primary export"

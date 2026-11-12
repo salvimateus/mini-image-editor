@@ -1,6 +1,7 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import type { ExportFormat } from '../core/types.ts';
 import { FORMAT_INFO } from '../core/formats.ts';
+import { flushPrefs } from './prefs.ts';
 
 export type SaveResult =
   | { status: 'saved'; path: string }
@@ -100,7 +101,10 @@ export async function guardWindowClose(shouldAsk: () => boolean, ask: () => Prom
       if (asking) return;
       asking = true;
       try {
-        if (!shouldAsk() || (await ask())) await win.destroy();
+        if (!shouldAsk() || (await ask())) {
+          flushPrefs();
+          await win.destroy();
+        }
       } finally {
         asking = false;
       }

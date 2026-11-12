@@ -4,7 +4,7 @@ import { t, type TextKey } from '../i18n/index.ts';
 import { createTextLayer } from '../layers.ts';
 import * as sfx from '../sfx.ts';
 import { app } from '../state.svelte.ts';
-import { readStored, writeStored } from '../storage.ts';
+import { onPrefsReset, readPrefs, savePrefs } from '../prefs.ts';
 import { areaWidth, placeText, placementOf, renderTextNow, renderTextWithStatus, textAnchor, wrappedText } from '../text-render.ts';
 import { TUNING } from '../tuning/index.ts';
 import { BUNDLED_FAMILY, familyInfo, fitStyle, loadFont, rememberFamily, retryFont } from './fonts.ts';
@@ -36,6 +36,7 @@ export type EditTarget = { kind: 'draft'; spec: TextSpec } | { kind: 'layer'; id
 export type FontState = 'idle' | 'loading' | 'ready' | 'offline';
 
 const STYLE_KEY = 'text.style';
+const STYLE_VERSION = 1;
 /** The steps that a session of a new text pushes: its add step and its edits. */
 const SESSION_LABELS = new Set<TextKey | null>(['text.history.add', 'history.textEdit']);
 /** The most undo steps that the removal of an empty new text walks back. */
@@ -92,14 +93,7 @@ export function cleanStyle(value: Partial<Record<keyof TextStyle, unknown>>): Te
 }
 
 function loadStyle(): TextStyle {
-  const text = readStored(STYLE_KEY);
-  if (!text) return cleanStyle({});
-  try {
-    const value: unknown = JSON.parse(text);
-    return cleanStyle(value && typeof value === 'object' ? (value as Partial<Record<keyof TextStyle, unknown>>) : {});
-  } catch {
-    return cleanStyle({});
-  }
+  return cleanStyle((readPrefs(STYLE_KEY, STYLE_VERSION) ?? {}) as Partial<Record<keyof TextStyle, unknown>>);
 }
 
 function styleOf(spec: TextSpec): TextStyle {
@@ -274,6 +268,8 @@ class TextSession {
     }
     const spec = applyPatch(target.spec, patch);
     this.rememberStyle(spec);
+    // A new text takes the foreground color: the color of the last edited text becomes it, and it is stored.
+    if (patch.color) app.setFg(spec.color, false);
     if (patch.family !== undefined && patch.family !== target.spec.family) rememberFamily(spec.family);
     if (target.kind === 'draft') {
       const draft = this.draft;
@@ -349,7 +345,7 @@ class TextSession {
   private rememberStyle(spec: TextSpec): void {
     const style = styleOf(spec);
     this.style = style;
-    writeStored(STYLE_KEY, JSON.stringify(style));
+    savePrefs(STYLE_KEY, STYLE_VERSION, style);
   }
 
   private dropJobsOf(draft: Draft): void {
@@ -442,3 +438,4 @@ class TextSession {
 }
 
 export const textSession = new TextSession();
+onPrefsReset(() => (textSession.style = cleanStyle({})));
