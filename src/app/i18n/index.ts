@@ -7,6 +7,7 @@ import * as geometry from './geometry.ts';
 import * as paint from './paint.ts';
 import * as select from './select.ts';
 import * as stage from './stage.ts';
+import * as shapes from './shapes.ts';
 import * as text from './text.ts';
 
 const ptBR = {
@@ -19,6 +20,7 @@ const ptBR = {
   ...geometry.ptBR,
   ...adjust.ptBR,
   ...text.ptBR,
+  ...shapes.ptBR,
   ...exporting.ptBR,
 };
 
@@ -34,6 +36,7 @@ const en: Record<TextKey, string> = {
   ...geometry.en,
   ...adjust.en,
   ...text.en,
+  ...shapes.en,
   ...exporting.en,
 };
 

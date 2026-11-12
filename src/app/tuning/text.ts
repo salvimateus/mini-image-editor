@@ -17,6 +17,12 @@ export const TEXT_TUNING = {
   recentMax: 8,
   /** A press on a text layer that moves less than this (screen px) is a click that opens the text for editing. */
   dragThresholdPx: 3,
+  /** A drag longer than this (screen px) on an empty area makes an area text instead of a free text. */
+  areaThresholdPx: 6,
+  /** The wrap width of a draft that turns into an area text before it has letters, in document px. */
+  defaultBoxWidth: 400,
+  /** The side handles of an area text: their size and the grab distance, in screen px. */
+  boxHandle: { widthPx: 8, heightPx: 22, hitPx: 10 },
   /** A spark burst at a new text point. */
   createBurst: { count: 10, speed: [60, 160], life: [0.25, 0.45], size: [3, 6] },
   ranges: {
@@ -26,6 +32,8 @@ export const TEXT_TUNING = {
     strokeWidth: { min: 1, max: 100, step: 1 },
     shadowOffset: { min: -200, max: 200, step: 1 },
     shadowBlur: { min: 0, max: 100, step: 1 },
+    /** The wrap width of an area text, in document px. */
+    boxWidth: { min: 16, max: 4000, step: 1 },
   },
   /** The style of the first text, before the user picks one. */
   defaults: {

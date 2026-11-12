@@ -6,6 +6,8 @@ import CropOptions from './CropOptions.svelte';
 import MoveOptions from './MoveOptions.svelte';
 import PaintOptions from './PaintOptions.svelte';
 import SelectOptions from './SelectOptions.svelte';
+import ShapeOptions from './ShapeOptions.svelte';
+import StepOptions from './StepOptions.svelte';
 import TextOptions from './TextOptions.svelte';
 
 /** The options bar component of each tool; null for a tool with no options. PaintOptions reads app.tool for its settings. */
@@ -23,6 +25,8 @@ export const TOOL_OPTIONS: Record<ToolId, Component | null> = {
   bucket: BucketOptions,
   clone: CloneOptions,
   text: TextOptions,
+  shape: ShapeOptions,
+  step: StepOptions,
   hand: null,
   zoom: null,
 };

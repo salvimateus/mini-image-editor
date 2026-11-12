@@ -22,6 +22,8 @@ export const ptBR = {
   'adjust.blocked.noLayer': 'Escolha uma camada no painel Camadas.',
   'adjust.blocked.text': 'A camada ativa é de texto. Escolha uma camada de imagem no painel Camadas.',
   'adjust.blocked.generated': 'A camada ativa é a vinheta. Use o painel Vinheta para mudá-la.',
+  'adjust.blocked.frame': 'A camada ativa é a moldura. Use o painel Moldura para mudá-la.',
+  'adjust.blocked.shape': 'A camada ativa é uma forma. Escolha uma camada de imagem no painel Camadas.',
   'adjust.layerNote': 'Camada: {name}',
   'adjust.selectionNote': 'Só dentro da seleção',
 
@@ -75,6 +77,15 @@ export const ptBR = {
   'adjust.vignette.editing': 'Edita a camada “{name}”',
   'adjust.vignette.new': 'Cria a camada “Vinheta” no topo',
   'adjust.vignette.noPreview': 'Nenhuma camada visível para mostrar a prévia.',
+
+  'adjust.frame.width': 'Largura',
+  'adjust.frame.color': 'Cor',
+  'adjust.frame.grow': 'Aumentar o palco',
+  'adjust.frame.growHint': 'A imagem fica {n} px maior em cada lado, e a moldura não cobre a foto.',
+  'adjust.frame.coverHint': 'A moldura cobre as bordas. Ligado, a imagem fica {n} px maior em cada lado.',
+  'adjust.frame.editing': 'Edita a camada “{name}”',
+  'adjust.frame.new': 'Cria a camada “Moldura” no topo',
+  'adjust.frame.clamped': 'A largura máxima nesta imagem é {n} px.',
 } as const;
 
 export const en: Record<keyof typeof ptBR, string> = {
@@ -100,6 +111,8 @@ export const en: Record<keyof typeof ptBR, string> = {
   'adjust.blocked.noLayer': 'Choose a layer in the Layers panel.',
   'adjust.blocked.text': 'The active layer is a text layer. Choose an image layer in the Layers panel.',
   'adjust.blocked.generated': 'The active layer is the vignette. Use the Vignette panel to change it.',
+  'adjust.blocked.frame': 'The active layer is the frame. Use the Frame panel to change it.',
+  'adjust.blocked.shape': 'The active layer is a shape. Choose an image layer in the Layers panel.',
   'adjust.layerNote': 'Layer: {name}',
   'adjust.selectionNote': 'Only inside the selection',
 
@@ -153,4 +166,13 @@ export const en: Record<keyof typeof ptBR, string> = {
   'adjust.vignette.editing': 'Edits the layer “{name}”',
   'adjust.vignette.new': 'Adds the “Vignette” layer on top',
   'adjust.vignette.noPreview': 'No visible layer to show the preview.',
+
+  'adjust.frame.width': 'Width',
+  'adjust.frame.color': 'Color',
+  'adjust.frame.grow': 'Grow the stage',
+  'adjust.frame.growHint': 'The image becomes {n} px larger on each side, so the frame does not cover the photo.',
+  'adjust.frame.coverHint': 'The frame covers the edges. When on, the image becomes {n} px larger on each side.',
+  'adjust.frame.editing': 'Edits the layer “{name}”',
+  'adjust.frame.new': 'Adds the “Frame” layer on top',
+  'adjust.frame.clamped': 'The largest width for this image is {n} px.',
 };

@@ -14,7 +14,9 @@ export type EngineRequest =
   | { id: number; type: 'adjust-end' }
   | { id: number; type: 'vignette'; width: number; height: number; params: VignetteParams }
   | { id: number; type: 'resize'; image: RasterImage; width: number; height: number; method: ResampleMethod }
-  | { id: number; type: 'estimate' | 'export'; image: RasterImage; options: ExportOptions };
+  /** quick: only the plain size; both reply numbers are that size. */
+  | { id: number; type: 'estimate'; image: RasterImage; options: ExportOptions; quick?: boolean }
+  | { id: number; type: 'export'; image: RasterImage; options: ExportOptions };
 
 export type EngineReply =
   | { id: number; ok: true; type: 'decode'; image: RasterImage; format: string }

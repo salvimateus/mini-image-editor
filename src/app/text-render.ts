@@ -1,19 +1,21 @@
 import { toCss } from '../core/color.ts';
 import { PARAMS } from '../core/params/index.ts';
 import { createRaster } from '../core/raster.ts';
-import type { Point, RasterImage, TextSpec } from '../core/types.ts';
+import type { Point, RasterImage, Rect, TextSpec } from '../core/types.ts';
 import { BUNDLED_FAMILY, familyInfo, fitStyle, fontReady, fontShorthand, loadFont, quoteFamily, type FontStatus } from './fonts/fonts.ts';
 import { cloneTextSpec, type TextLayer } from './layers.ts';
 
 /**
- * Where the text sits inside its rendered image, in image px. (ax, ay) is the anchor: the left, center or right of
- * the text box (by the alignment) and its top. boxX and boxW give the text box, without the outline and the shadow.
+ * Where the text sits inside its rendered image, in image px. (ax, ay) is the anchor: the top of the text box and its
+ * left, center or right by the alignment (always the left for an area text, so its box never moves). boxX, boxW and
+ * boxH give the text box, without the outline and the shadow; the box top is at ay.
  */
 export interface TextPlacement {
   ax: number;
   ay: number;
   boxX: number;
   boxW: number;
+  boxH: number;
 }
 
 interface Line {
@@ -33,6 +35,7 @@ interface Layout {
   spacing: number;
   native: boolean;
   width: number;
+  height: number;
   /** Ink and effects, in text box coordinates. */
   minX: number;
   maxX: number;
@@ -87,6 +90,74 @@ function splitLines(text: string): string[] {
   return text.replace(/\r\n?/g, '\n').split('\n');
 }
 
+/** The wrap width of an area text, or null for a free text. */
+export function areaWidth(spec: TextSpec): number | null {
+  const width = spec.boxWidth;
+  return typeof width === 'number' && Number.isFinite(width) && width > 0 ? width : null;
+}
+
+/** The advance width of a line of the typed text, as the draw places it: case transform, then letter spacing. */
+function lineWidth(ctx: CanvasRenderingContext2D, text: string, spec: TextSpec): number {
+  if (!text) return 0;
+  const shown = transformText(text, spec.transform);
+  const count = graphemes(shown).length;
+  return ctx.measureText(shown).width + (count > 1 ? spec.letterSpacing * (count - 1) : 0);
+}
+
+/** Breaks a word that is wider than the box between its letters, with at least one letter on each line. */
+function breakWord(ctx: CanvasRenderingContext2D, word: string, spec: TextSpec, width: number): string[] {
+  const out: string[] = [];
+  let line = '';
+  for (const part of graphemes(word)) {
+    if (line && lineWidth(ctx, line + part, spec) > width) {
+      out.push(line);
+      line = part;
+    } else {
+      line += part;
+    }
+  }
+  if (line) out.push(line);
+  return out;
+}
+
+/** The lines of the typed text: the manual breaks, then the wrap at the box width of an area text (at spaces first). */
+function wrapLines(ctx: CanvasRenderingContext2D, spec: TextSpec): string[] {
+  const manual = splitLines(spec.text);
+  const width = areaWidth(spec);
+  if (width === null) return manual;
+  const out: string[] = [];
+  for (const paragraph of manual) {
+    const words = paragraph.split(/(\s+)/);
+    let line = '';
+    let gap = '';
+    for (let i = 0; i < words.length; i += 2) {
+      const word = words[i];
+      const space = words[i + 1] ?? '';
+      if (!word) {
+        gap += space;
+        continue;
+      }
+      const candidate = line + gap + word;
+      if (lineWidth(ctx, candidate, spec) <= width) {
+        line = candidate;
+      } else {
+        if (line) out.push(line);
+        line = '';
+        if (lineWidth(ctx, word, spec) > width) {
+          const pieces = breakWord(ctx, word, spec, width);
+          out.push(...pieces.slice(0, -1));
+          line = pieces[pieces.length - 1] ?? '';
+        } else {
+          line = word;
+        }
+      }
+      gap = space;
+    }
+    out.push(line);
+  }
+  return out;
+}
+
 /** The family that the canvas draws with: the family when its style is loaded, else the bundled family. */
 function drawFamily(spec: TextSpec, status: FontStatus): string {
   return status === 'ready' ? spec.family : BUNDLED_FAMILY;
@@ -126,7 +197,7 @@ function layoutText(ctx: CanvasRenderingContext2D, spec: TextSpec, family: strin
   const descent = probe.fontBoundingBoxDescent || spec.size * 0.2;
   const advance = spec.size * spec.lineHeight;
   const halfLeading = (advance - (ascent + descent)) / 2;
-  const texts = splitLines(transformText(spec.text, spec.transform));
+  const texts = wrapLines(ctx, spec).map((line) => transformText(line, spec.transform));
   const lines: Line[] = [];
   let inkMinX = Infinity;
   let inkMaxX = -Infinity;
@@ -148,17 +219,18 @@ function layoutText(ctx: CanvasRenderingContext2D, spec: TextSpec, family: strin
         prefix += parts[i];
       }
     }
-    const lineWidth = text ? plain.width + extra : 0;
-    widths.push(lineWidth);
+    const advanceWidth = text ? plain.width + extra : 0;
+    widths.push(advanceWidth);
     inks.push({
       left: text ? plain.actualBoundingBoxLeft : 0,
       right: text ? plain.actualBoundingBoxRight + extra : 0,
       up: text ? plain.actualBoundingBoxAscent : 0,
       down: text ? plain.actualBoundingBoxDescent : 0,
     });
-    width = Math.max(width, lineWidth);
-    lines.push({ text, width: lineWidth, x: 0, baseline: 0, glyphs });
+    width = Math.max(width, advanceWidth);
+    lines.push({ text, width: advanceWidth, x: 0, baseline: 0, glyphs });
   }
+  width = areaWidth(spec) ?? width;
   lines.forEach((line, i) => {
     line.x = spec.align === 'center' ? (width - line.width) / 2 : spec.align === 'right' ? width - line.width : 0;
     line.baseline = i * advance + halfLeading + ascent;
@@ -177,6 +249,7 @@ function layoutText(ctx: CanvasRenderingContext2D, spec: TextSpec, family: strin
     spacing,
     native,
     width,
+    height,
     minX: Math.min(0, Number.isFinite(inkMinX) ? inkMinX : 0) - margins.left,
     maxX: Math.max(width, Number.isFinite(inkMaxX) ? inkMaxX : 0) + margins.right,
     minY: Math.min(0, Number.isFinite(inkMinY) ? inkMinY : 0) - margins.top,
@@ -186,7 +259,7 @@ function layoutText(ctx: CanvasRenderingContext2D, spec: TextSpec, family: strin
 
 /** The image size and the placement of the text box in it: the ink and the effects, with no extra space. */
 function frame(spec: TextSpec, layout: Layout): { width: number; height: number; placement: TextPlacement } {
-  const anchorInBox = spec.align === 'center' ? layout.width / 2 : spec.align === 'right' ? layout.width : 0;
+  const anchorInBox = areaWidth(spec) !== null ? 0 : spec.align === 'center' ? layout.width / 2 : spec.align === 'right' ? layout.width : 0;
   // Whole pixels from the anchor to each edge, so the anchor sits on a pixel corner and a layer that keeps it never drifts.
   const left = Math.max(0, Math.ceil(anchorInBox - layout.minX));
   const right = Math.max(0, Math.ceil(layout.maxX - anchorInBox));
@@ -195,7 +268,7 @@ function frame(spec: TextSpec, layout: Layout): { width: number; height: number;
   const { maxSide, maxPixels } = PARAMS.limits;
   const width = Math.min(maxSide, Math.max(1, left + right));
   const height = Math.min(maxSide, Math.max(1, top + bottom), Math.max(1, Math.floor(maxPixels / width)));
-  return { width, height, placement: { ax: left, ay: top, boxX: left - anchorInBox, boxW: layout.width } };
+  return { width, height, placement: { ax: left, ay: top, boxX: left - anchorInBox, boxW: layout.width, boxH: layout.height } };
 }
 
 function drawLines(ctx: CanvasRenderingContext2D, layout: Layout, ox: number, oy: number, mode: 'stroke' | 'fill'): void {
@@ -230,15 +303,20 @@ function paintText(ctx: CanvasRenderingContext2D, spec: TextSpec, layout: Layout
   drawLines(ctx, layout, ox, oy, 'fill');
 }
 
-function emptyImage(): RasterImage {
+function emptyPlacement(spec: TextSpec): TextPlacement {
+  return { ax: 0, ay: 0, boxX: 0, boxW: areaWidth(spec) ?? 0, boxH: spec.size * spec.lineHeight };
+}
+
+/** A 1 x 1 transparent image; an area text keeps its box in the placement. */
+function emptyImage(spec: TextSpec): RasterImage {
   const image = createRaster(1, 1);
-  placements.set(image, { ax: 0, ay: 0, boxX: 0, boxW: 0 });
+  placements.set(image, emptyPlacement(spec));
   return image;
 }
 
 /** Renders now with `family`, which must be loaded. The image is generated, so its pixels can be read from the canvas. */
 function draw(spec: TextSpec, family: string): RasterImage {
-  if (!spec.text) return emptyImage();
+  if (!spec.text) return emptyImage(spec);
   const layout = layoutText(measurer(), spec, family);
   const { width, height, placement } = frame(spec, layout);
   const ctx = context2d(width, height);
@@ -267,13 +345,13 @@ function safeDraw(spec: TextSpec, family: string): RasterImage {
   try {
     return draw(spec, family);
   } catch {
-    return emptyImage();
+    return emptyImage(spec);
   }
 }
 
 /** Loads the font (or the bundled one when it fails), then renders. The status says which font the image uses. */
 export async function renderTextWithStatus(spec: TextSpec): Promise<{ image: RasterImage; status: FontStatus }> {
-  if (!spec.text) return { image: emptyImage(), status: 'ready' };
+  if (!spec.text) return { image: emptyImage(spec), status: 'ready' };
   const shown = transformText(spec.text, spec.transform);
   let status: FontStatus = 'offline';
   try {
@@ -298,7 +376,7 @@ export async function renderTextLayer(spec: TextSpec): Promise<RasterImage> {
 
 /** A render with no wait, or null when the font of the spec is not loaded yet. */
 export function renderTextNow(spec: TextSpec): RasterImage | null {
-  if (!spec.text) return emptyImage();
+  if (!spec.text) return emptyImage(spec);
   if (!fontReady(spec.family, spec.weight, spec.italic, transformText(spec.text, spec.transform))) return null;
   return safeDraw(spec, spec.family);
 }
@@ -314,6 +392,8 @@ export function scaleTextSpec(spec: TextSpec, factor: number): TextSpec {
   out.shadow.blur = round(spec.shadow.blur * f);
   out.shadow.dx = round(spec.shadow.dx * f);
   out.shadow.dy = round(spec.shadow.dy * f);
+  const area = areaWidth(spec);
+  out.boxWidth = area === null ? null : Math.max(1, round(area * f));
   return out;
 }
 
@@ -321,23 +401,46 @@ export function scaleTextSpec(spec: TextSpec, factor: number): TextSpec {
 export function placementOf(image: RasterImage, spec: TextSpec): TextPlacement {
   const known = placements.get(image);
   if (known) return known;
-  if (!spec.text) return { ax: 0, ay: 0, boxX: 0, boxW: 0 };
+  if (!spec.text) return emptyPlacement(spec);
   try {
     const family = fontReady(spec.family, spec.weight, spec.italic) ? spec.family : BUNDLED_FAMILY;
     const placement = frame(spec, layoutText(measurer(), spec, family)).placement;
     placements.set(image, placement);
     return placement;
   } catch {
-    return { ax: 0, ay: 0, boxX: 0, boxW: 0 };
+    return emptyPlacement(spec);
   }
 }
 
-/** The anchor of a text layer in document px: the left, center or right of its text box (by the alignment) and its top. */
-export function textAnchor(layer: TextLayer, align: TextSpec['align'] = layer.spec.align): Point {
+/** The text box of a text layer in document px: the wrap box of an area text, the box of the lines of a free text. */
+export function textBox(layer: TextLayer): Rect {
+  const placement = placementOf(layer.image, layer.spec);
+  return { x: layer.x + placement.boxX, y: layer.y + placement.ay, w: placement.boxW, h: placement.boxH };
+}
+
+/**
+ * The anchor of a text layer in document px, for a spec with `align` that is an area text or not: the top of its
+ * text box, and the left of the box for an area text, else its left, center or right by the alignment.
+ */
+export function textAnchor(layer: TextLayer, align: TextSpec['align'] = layer.spec.align, area = areaWidth(layer.spec) !== null): Point {
   const placement = placementOf(layer.image, layer.spec);
   const left = layer.x + placement.boxX;
-  const x = align === 'center' ? left + placement.boxW / 2 : align === 'right' ? left + placement.boxW : left;
+  const x = area ? left : align === 'center' ? left + placement.boxW / 2 : align === 'right' ? left + placement.boxW : left;
   return { x: Math.round(x), y: layer.y + placement.ay };
+}
+
+/** The lines of the typed text after the wrap, so an area text can become a free text with the same line breaks. */
+export function wrappedText(spec: TextSpec): string {
+  if (areaWidth(spec) === null || !spec.text) return spec.text;
+  try {
+    const ctx = measurer();
+    const family = fontReady(spec.family, spec.weight, spec.italic) ? spec.family : BUNDLED_FAMILY;
+    ctx.font = fontOf(spec, family);
+    if (hasLetterSpacing(ctx)) ctx.letterSpacing = '0px';
+    return wrapLines(ctx, spec).join('\n');
+  } catch {
+    return spec.text;
+  }
 }
 
 /** The top-left corner (document px) that puts the anchor of `image` at `anchor`. */

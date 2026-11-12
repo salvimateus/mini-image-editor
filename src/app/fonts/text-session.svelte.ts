@@ -5,12 +5,12 @@ import { createTextLayer } from '../layers.ts';
 import * as sfx from '../sfx.ts';
 import { app } from '../state.svelte.ts';
 import { readStored, writeStored } from '../storage.ts';
-import { placeText, renderTextNow, renderTextWithStatus, textAnchor } from '../text-render.ts';
+import { areaWidth, placeText, placementOf, renderTextNow, renderTextWithStatus, textAnchor, wrappedText } from '../text-render.ts';
 import { TUNING } from '../tuning/index.ts';
 import { BUNDLED_FAMILY, familyInfo, fitStyle, loadFont, rememberFamily, retryFont } from './fonts.ts';
 
-/** Everything of a text spec except the words and the color: what the next new text starts with. */
-export type TextStyle = Omit<TextSpec, 'text' | 'color'>;
+/** Everything of a text spec except the words, the color and the wrap box: what the next new text starts with. */
+export type TextStyle = Omit<TextSpec, 'text' | 'color' | 'boxWidth'>;
 
 /** A text point that has no letters yet. It is not in the document, so an empty text leaves no undo step behind. */
 interface Draft {
@@ -29,7 +29,7 @@ interface Session {
 }
 
 type Job =
-  | { kind: 'render'; session: Session; draft: Draft | null; layerId: number | null; spec: TextSpec; coalesce?: string }
+  | { kind: 'render'; session: Session; draft: Draft | null; layerId: number | null; spec: TextSpec; coalesce?: string; anchor?: Point }
   | { kind: 'cleanup'; session: Session };
 
 export type EditTarget = { kind: 'draft'; spec: TextSpec } | { kind: 'layer'; id: number; spec: TextSpec };
@@ -103,8 +103,15 @@ function loadStyle(): TextStyle {
 }
 
 function styleOf(spec: TextSpec): TextStyle {
-  const { text: _text, color: _color, ...style } = spec;
+  const { text: _text, color: _color, boxWidth: _box, ...style } = spec;
   return cleanStyle(style);
+}
+
+/** A wrap width in whole px, at least the minimum; null for a free text. */
+function cleanBox(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return null;
+  const { min, max } = TUNING.text.ranges.boxWidth;
+  return Math.round(clamp(value, min, max));
 }
 
 function withStyle(style: TextStyle, text: string, fill: Rgba): TextSpec {
@@ -136,7 +143,9 @@ function applyPatch(spec: TextSpec, patch: SpecPatch): TextSpec {
     stroke: { ...spec.stroke, ...patch.stroke },
     shadow: { ...spec.shadow, ...patch.shadow },
   };
-  return withStyle(cleanStyle(merged), typeof merged.text === 'string' ? merged.text : '', color(merged.color, spec.color));
+  const out = withStyle(cleanStyle(merged), typeof merged.text === 'string' ? merged.text : '', color(merged.color, spec.color));
+  out.boxWidth = cleanBox(merged.boxWidth);
+  return out;
 }
 
 /**
@@ -200,14 +209,19 @@ class TextSession {
     this.update(info ? fitStyle(info, base.weight, italic) : { italic });
   }
 
-  /** A new text point at `point` (document px). The text joins the document with its first letter. */
-  begin(point: Point): void {
+  /**
+   * A new text at `point` (document px): a free text, or an area text that wraps at `boxWidth` with its box top-left
+   * at the point. The text joins the document with its first letter.
+   */
+  begin(point: Point, boxWidth: number | null = null): void {
     const doc = app.doc;
     if (!doc) return;
     this.end();
     const session: Session = { doc, layerId: null, createdId: null };
     this.current = session;
-    this.draft = { session, anchor: { x: Math.round(point.x), y: Math.round(point.y) }, spec: this.newSpec() };
+    const spec = this.newSpec();
+    spec.boxWidth = cleanBox(boxWidth);
+    this.draft = { session, anchor: { x: Math.round(point.x), y: Math.round(point.y) }, spec };
     this.font = 'idle';
     this.openPanel();
   }
@@ -248,8 +262,11 @@ class TextSession {
     void this.pump();
   }
 
-  /** Changes the edited text, or the style of the next text when nothing is edited. */
-  update(patch: SpecPatch, coalesce?: string): void {
+  /**
+   * Changes the edited text, or the style of the next text when nothing is edited. `anchor` (document px) places the
+   * text box anew, for a handle that moves the left side of an area text.
+   */
+  update(patch: SpecPatch, coalesce?: string, anchor?: Point): void {
     const target = this.target;
     if (!target) {
       this.setStyle(patch);
@@ -272,7 +289,26 @@ class TextSession {
     const session = this.current;
     if (!session) return;
     this.pending = { id: target.id, spec };
-    this.enqueue({ kind: 'render', session, draft: null, layerId: target.id, spec, coalesce });
+    this.enqueue({ kind: 'render', session, draft: null, layerId: target.id, spec, coalesce, anchor });
+  }
+
+  /**
+   * Free text or area text. A free text becomes an area text as wide as its lines; an area text becomes a free text
+   * with the line breaks that the wrap made.
+   */
+  setArea(on: boolean): void {
+    const target = this.target;
+    if (!target || (areaWidth(target.spec) !== null) === on) return;
+    if (!on) {
+      this.update({ boxWidth: null, text: wrappedText(target.spec) });
+      return;
+    }
+    let width: number = TUNING.text.defaultBoxWidth;
+    if (target.kind === 'layer') {
+      const layer = app.doc?.layer(target.id);
+      if (layer?.kind === 'text' && layer.spec.text) width = Math.ceil(placementOf(layer.image, layer.spec).boxW);
+    }
+    this.update({ boxWidth: Math.max(width, TUNING.text.ranges.boxWidth.min) });
   }
 
   /** The style of the next new text, with no edited text. */
@@ -380,7 +416,7 @@ class TextSession {
       if (id === null || !layer || layer.kind !== 'text') return;
       if (sameSpec(layer.spec, job.spec) && sameImage(layer.image, image)) return;
       // An alignment change keeps the side of the box that the new alignment names, so the text does not jump.
-      const anchor = textAnchor(layer, job.spec.align);
+      const anchor = job.anchor ?? textAnchor(layer, job.spec.align, areaWidth(job.spec) !== null);
       const at = placeText(anchor, image, job.spec);
       doc.setTextSpec(id, job.spec, image, job.coalesce, at);
     } catch (error) {

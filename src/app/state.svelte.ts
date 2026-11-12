@@ -39,12 +39,13 @@ export interface ConfirmRequest {
 /** size in px; hardness and opacity 0..1. */
 export interface BrushSettings { size: number; hardness: number; opacity: number }
 export type BrushToolId = 'brush' | 'pencil' | 'eraser' | 'clone';
-export type PanelId = 'none' | 'hue-saturation' | 'levels' | 'sharpen' | 'vignette' | 'text';
+export type PanelId = 'none' | 'hue-saturation' | 'levels' | 'sharpen' | 'vignette' | 'text' | 'frame';
 export type DialogId = 'none' | 'new-image' | 'canvas-size' | 'image-size' | 'export' | 'shortcuts';
 export interface ViewFlags { rulers: boolean; guides: boolean; grid: boolean; snap: boolean; avatar: boolean; hud: boolean }
 export interface BucketSettings { tolerance: number; contiguous: boolean }
 export interface CropRequest { ratioW: number; ratioH: number; mode: 'crop' | 'expand' }
-export interface WeightState { bytes: number | null; pending: boolean }
+/** upper: `bytes` is the size before optimization, and the optimized size is still in work. */
+export interface WeightState { bytes: number | null; pending: boolean; upper?: boolean }
 
 const BRUSH_TOOLS: readonly BrushToolId[] = ['brush', 'pencil', 'eraser', 'clone'];
 const BLACK: Rgba = { r: 0, g: 0, b: 0, a: 255 };
@@ -348,7 +349,7 @@ class AppState {
   }
 
   setWeight(weight: WeightState): void {
-    this.weight = { bytes: weight.bytes, pending: weight.pending };
+    this.weight = { bytes: weight.bytes, pending: weight.pending, upper: weight.upper === true };
   }
 
   /** The next primary press on the stage goes to the handler, not to the tool. */

@@ -127,6 +127,18 @@ export const selectActions: ActionHandlers<SelectActionId> = {
   'select.erase': () => {
     const doc = app.doc;
     if (!doc) return;
+    const active = doc.active;
+    // With no selection, Delete removes a whole text or shape layer: it has no pixels of its own to erase.
+    if (!currentSelection(doc) && active && (active.kind === 'text' || active.kind === 'shape')) {
+      cancelTransform(true);
+      if (doc.layers.length <= 1) {
+        hint('select.toast.lastLayer');
+        return;
+      }
+      doc.removeLayer(active.id);
+      sfx.play('delete');
+      return;
+    }
     const selection = selectionOrHint(doc);
     if (!selection) return;
     cancelTransform(true);

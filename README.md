@@ -6,7 +6,7 @@
 
 <p align="center"><strong>A small desktop image editor for quick edits: open an image, edit it, export it, close it.</strong></p>
 
-Mini Image Editor is for people who must do a fast change to an image and do not want to learn a large editor. It has layers, selections, paint tools, adjustments, text and an optimized export. Each action gives a short sound and a visual response, and the interface is in English and in Brazilian Portuguese.
+Mini Image Editor is for people who must do a fast change to an image and do not want to learn a large editor. It has layers, selections, paint tools, shapes, numbered steps, adjustments, text and an optimized export. Each action gives a short sound and a visual response, and the interface is in English and in Brazilian Portuguese.
 
 There is no project file. You open an image, edit it and export a new file.
 
@@ -57,17 +57,26 @@ There is no project file. You open an image, edit it and export a new file.
 - Eyedropper with a loupe. In the paint tools, Alt+click or right-click picks a color.
 - Color panel: foreground and background swatches, a saturation and brightness square, a hue strip, a hex field and the last 12 colors.
 
+### Shapes and steps
+
+- Shapes tool: rectangle with square or rounded corners, ellipse, thin arrow and thick arrow.
+- Each shape has a border (red and 2 px by default) and an optional fill.
+- Each shape is its own layer. Move it, or change its size with the handles. It stays sharp at all sizes.
+- Steps tool: numbered badges for tutorials. Each click puts the next number. You can start again at 1.
+
 ### Adjustments
 
 - Hue and saturation: hue, saturation and lightness, with a Colorize option.
 - Levels: a histogram, input black, gamma and white, output black and white, Auto, and three eyedroppers. Each channel (RGB, R, G, B) has its own levels.
 - Sharpen: steps from 0 to 10, always calculated from the original pixels. "Advanced" has radius and threshold.
 - Vignette: a generated top layer with amount, size, roundness and feather. You can edit it later. It changes with the canvas size.
+- Frame: a border around the image, with a color and a width. It is a layer that you can edit later. An option makes the canvas larger, so the frame does not cover the image.
 - Each adjustment has a live preview and a reset.
 
 ### Text
 
 - Text tool with the full Google Fonts catalog: find a font, see a preview and select a font from the recent list. You install nothing.
+- Click the image to make free text: one line that grows to the side. Drag to make area text: the lines break by themselves at the width of the area.
 - Type in the field of the Text panel. The image shows the real text while you type.
 - Options: weight, italic, size, letter spacing, line height, case, alignment, color, outline and shadow.
 - The font Inter is in the app, so text works with no internet connection.
@@ -114,6 +123,8 @@ There is no project file. You open an image, edit it and export a new file.
 | Tools | Paint bucket | G |
 | Tools | Clone stamp | S |
 | Tools | Text | T |
+| Tools | Shapes | U |
+| Tools | Steps | N |
 | Tools | Hand | H |
 | Tools | Zoom | Z |
 | Tools | Smaller brush | `[` |
@@ -135,7 +146,7 @@ There is no project file. You open an image, edit it and export a new file.
 | Layer | Duplicate layer | Ctrl+J |
 | Layer | Merge down | Ctrl+E |
 | Layer | Resize layer | Ctrl+T |
-| View | Zoom in | Ctrl+= or Ctrl++ |
+| View | Zoom in | Ctrl++ or Ctrl+= |
 | View | Zoom out | Ctrl+- |
 | View | Fit to window | Ctrl+0 |
 | View | Actual size (100%) | Ctrl+1 |

@@ -200,13 +200,13 @@ export class ImageEngine {
 
   /**
    * Latest wins. A newer estimate ends and restarts the codec worker when an estimate runs there, because the encoders
-   * cannot stop. While an export runs, the newest estimate waits for it instead.
+   * cannot stop. While an export runs, the newest estimate waits for it instead. `quick` asks only for the plain size.
    */
-  estimate(image: RasterImage, options: ExportOptions): Promise<{ plainBytes: number; bytes: number } | null> {
+  estimate(image: RasterImage, options: ExportOptions, quick?: boolean): Promise<{ plainBytes: number; bytes: number } | null> {
     const copy = copyImage(image);
     const id = this.nextId++;
     this.latest.estimate = id;
-    const body: RequestBody = { type: 'estimate', image: copy, options: cloneOptions(options) };
+    const body: RequestBody = { type: 'estimate', image: copy, options: cloneOptions(options), quick: quick === true };
     const transfer = [copy.data.buffer];
     const sent = new Promise<EngineReply | null>((resolve, reject) => {
       if (this.deferred) {

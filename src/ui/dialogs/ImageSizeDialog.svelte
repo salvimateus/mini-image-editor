@@ -2,13 +2,14 @@
   import Link2 from '@lucide/svelte/icons/link-2';
   import Link2Off from '@lucide/svelte/icons/link-2-off';
   import { untrack } from 'svelte';
-  import type { Point, RasterImage, ResampleMethod, TextSpec } from '../../core/types.ts';
+  import type { Point, RasterImage, ResampleMethod, ShapeSpec, TextSpec } from '../../core/types.ts';
   import { stageSizeProblem } from '../../app/actions/geometry.ts';
   import type { EditorDoc } from '../../app/doc.svelte.ts';
   import { prepareGenerators } from '../../app/generators.ts';
   import { formatBytes, locale, parseDecimal, t, type TextKey } from '../../app/i18n/index.ts';
   import * as sfx from '../../app/sfx.ts';
   import { app } from '../../app/state.svelte.ts';
+  import { loadShapeFont, renderShapeLayer, scaleShapeSpec, shapeOrigin } from '../../app/shape-render.ts';
   import { placeText, renderTextLayer, scaleTextSpec, textAnchor } from '../../app/text-render.ts';
   import { flashStageOutline } from '../../app/tools/crop.ts';
   import Dialog from '../base/Dialog.svelte';
@@ -129,6 +130,7 @@
   interface Plan {
     raster: { id: number; image: RasterImage; at: Point }[];
     text: { id: number; spec: TextSpec; image: RasterImage; at: Point }[];
+    shape: { id: number; spec: ShapeSpec; image: RasterImage; at: Point }[];
     putGenerated: () => void;
     /** The images that the plan started from, by layer id. */
     sources: Map<number, RasterImage>;
@@ -139,7 +141,7 @@
     const sx = w / doc.width;
     const sy = h / doc.height;
     const textFactor = Math.sqrt(sx * sy);
-    const plan: Plan = { raster: [], text: [], putGenerated: () => {}, sources: new Map() };
+    const plan: Plan = { raster: [], text: [], shape: [], putGenerated: () => {}, sources: new Map() };
     for (const layer of doc.layers) plan.sources.set(layer.id, layer.image);
     for (const layer of [...doc.layers]) {
       const at = { x: Math.round(layer.x * sx), y: Math.round(layer.y * sy) };
@@ -149,6 +151,15 @@
         const spec = scaleTextSpec(layer.spec, textFactor);
         const image = await renderTextLayer(spec);
         plan.text.push({ id: layer.id, spec, image, at: placeText({ x: anchor.x * sx, y: anchor.y * sy }, image, spec) });
+      } else if (layer.kind === 'shape') {
+        // The shape origin (rect top-left, arrow tail, step center) keeps its scaled place; the border padding is measured again.
+        const before = shapeOrigin(layer.spec);
+        const spec = scaleShapeSpec(layer.spec, sx, sy);
+        if (spec.kind === 'step') await loadShapeFont();
+        const image = renderShapeLayer(spec);
+        const after = shapeOrigin(spec);
+        const origin = { x: (layer.x + before.x) * sx, y: (layer.y + before.y) * sy };
+        plan.shape.push({ id: layer.id, spec, image, at: { x: Math.round(origin.x - after.x), y: Math.round(origin.y - after.y) } });
       } else if (!layer.generator) {
         const lw = Math.max(1, Math.round(layer.image.width * sx));
         const lh = Math.max(1, Math.round(layer.image.height * sy));
@@ -193,6 +204,7 @@
       const sy = h / doc.height;
       doc.batch(LABEL, () => {
         for (const job of plan.raster) doc.replaceImage(job.id, job.image, job.at, LABEL);
+        for (const job of plan.shape) doc.setShapeSpec(job.id, job.spec, job.image, undefined, job.at);
         for (const job of plan.text) {
           doc.setTextSpec(job.id, job.spec, job.image);
           doc.setLayerProps(job.id, job.at);

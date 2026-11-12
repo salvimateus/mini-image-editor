@@ -18,6 +18,4 @@ export const EXPORT_PARAMS = {
   icoMaxSide: 256,
   /** The entries of an exported ICO file: the sizes that Windows reads for files, taskbar and tabs. */
   icoSizes: [16, 24, 32, 48, 64, 128, 256],
-  /** Above this area the live estimate encodes only the plain file, and reports its size as both numbers. */
-  estimateFullMaxPixels: 4_000_000,
 } as const;

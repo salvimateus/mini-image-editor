@@ -6,7 +6,9 @@ import { guidesOverlay } from './guides.ts';
 import { loupeOverlay } from './loupe.ts';
 import { pixelGridOverlay } from './pixel-grid.ts';
 import { selectionOverlay } from './selection.ts';
+import { shapeHandlesOverlay } from './shape-handles.ts';
 import { snapFlashOverlay } from './snap-flash.ts';
+import { textBoxOverlay } from './text-box.ts';
 import { transformOverlay } from './transform.ts';
 import type { SceneOverlay } from './types.ts';
 
@@ -21,6 +23,8 @@ export const OVERLAYS: readonly SceneOverlay[] = [
   selectionOverlay,
   cropOverlay,
   transformOverlay,
+  shapeHandlesOverlay,
+  textBoxOverlay,
   snapFlashOverlay,
   brushCursorOverlay,
   loupeOverlay,

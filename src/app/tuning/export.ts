@@ -2,6 +2,8 @@
 export const EXPORT_TUNING = {
   /** The live weight of the status bar waits this long after the last edit. */
   estimateDelayMs: 700,
+  /** Above this area the live weight shows the plain size first, as an upper limit, while the optimized size runs. */
+  quickFromPixels: 1_000_000,
   /** The dialog encodes again this long after the last move of the quality slider. */
   qualityDelayMs: 300,
   /** The weights count up to their new value in this time. */

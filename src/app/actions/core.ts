@@ -48,6 +48,8 @@ export const coreActions: ActionHandlers<CoreActionId> = {
   'tool.bucket': tool('bucket'),
   'tool.clone': tool('clone'),
   'tool.text': tool('text'),
+  'tool.shape': tool('shape'),
+  'tool.step': tool('step'),
   'tool.hand': tool('hand'),
   'tool.zoom': tool('zoom'),
 

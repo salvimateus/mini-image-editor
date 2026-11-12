@@ -15,4 +15,5 @@ export const adjustActions: ActionHandlers<AdjustActionId> = {
   'adjust.levels': open('levels'),
   'adjust.sharpen': open('sharpen'),
   'adjust.vignette': open('vignette'),
+  'adjust.frame': open('frame'),
 };

@@ -15,6 +15,8 @@ export type ToolId =
   | 'bucket'
   | 'clone'
   | 'text'
+  | 'shape'
+  | 'step'
   | 'hand'
   | 'zoom';
 

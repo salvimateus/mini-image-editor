@@ -16,7 +16,7 @@
     { id: 'file', label: 'menu.file', items: ['file.new', 'file.open', null, 'layer.addImage', null, 'file.export', null, 'file.close'] },
     { id: 'edit', label: 'menu.edit', items: ['edit.undo', 'edit.redo'] },
     { id: 'image', label: 'menu.image', items: ['image.canvasSize', 'image.imageSize', null, 'tool.crop'] },
-    { id: 'adjust', label: 'menu.adjust', items: ['adjust.hueSaturation', 'adjust.levels', 'adjust.sharpen', 'adjust.vignette'] },
+    { id: 'adjust', label: 'menu.adjust', items: ['adjust.hueSaturation', 'adjust.levels', 'adjust.sharpen', 'adjust.vignette', null, 'adjust.frame'] },
     {
       id: 'layer',
       label: 'menu.layer',

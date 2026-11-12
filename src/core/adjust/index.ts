@@ -8,6 +8,7 @@ import { applySharpen, isSharpenIdentity, sharpenReach, sharpenSigma } from './s
 
 export type { AdjustRunOptions } from './common.ts';
 export { autoLevels, histogram } from './histogram.ts';
+export { frameWidth, renderFrame, sameFrame } from './frame.ts';
 export { HUE_SATURATION_IDENTITY, hueSaturationMap, isHueSaturationIdentity } from './hue-saturation.ts';
 export { cleanLevels, gammaFromHandle, gammaHandle, isLevelsIdentity, LEVELS_IDENTITY, levelsTable } from './levels.ts';
 export { cleanSharpen, isSharpenIdentity } from './sharpen.ts';

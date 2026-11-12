@@ -108,7 +108,8 @@
     if (!doc) return 'adjust.blocked.noDoc';
     if (!layer) return 'adjust.blocked.noLayer';
     if (layer.kind === 'text') return 'adjust.blocked.text';
-    if (layer.generator) return 'adjust.blocked.generated';
+    if (layer.kind === 'shape') return 'adjust.blocked.shape';
+    if (layer.generator) return layer.generator.kind === 'frame' ? 'adjust.blocked.frame' : 'adjust.blocked.generated';
     return null;
   });
   const sessionKey = $derived(

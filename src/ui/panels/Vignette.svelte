@@ -5,7 +5,7 @@
   import { cropRaster } from '../../core/raster.ts';
   import type { RasterImage, VignetteParams } from '../../core/types.ts';
   import type { EditorDoc, LayerPreview } from '../../app/doc.svelte.ts';
-  import { vignetteImage, vignetteLayers, type GeneratedLayer } from '../../app/generators.ts';
+  import { isFrameLayer, vignetteImage, vignetteInsertIndex, vignetteLayers, type GeneratedLayer } from '../../app/generators.ts';
   import { t } from '../../app/i18n/index.ts';
   import { createRasterLayer, type Layer, type RasterLayer } from '../../app/layers.ts';
   import { app } from '../../app/state.svelte.ts';
@@ -41,11 +41,11 @@
     return id;
   }
 
-  /** The topmost visible layer: with no vignette layer yet, the preview draws over it. */
+  /** The topmost visible layer below the frame: with no vignette layer yet, the preview draws over it. */
   function hostLayer(target: EditorDoc): Layer | null {
     for (let i = target.layers.length - 1; i >= 0; i--) {
       const layer = target.layers[i];
-      if (layer.visible && layer.opacity > 0) return layer;
+      if (layer.visible && layer.opacity > 0 && !isFrameLayer(layer)) return layer;
     }
     return null;
   }
@@ -163,8 +163,8 @@
         target.setActive(activeId === current.id ? next.id : activeId);
       } else {
         const next: RasterLayer = { ...createRasterLayer(t('adjust.vignette.layerName'), image, 0, 0), generator };
-        target.addLayer(next, target.layers.length, 'adjust.history.vignetteAdd');
-        // The new layer sits on top; painting goes on in the layer the user had chosen.
+        target.addLayer(next, vignetteInsertIndex(target), 'adjust.history.vignetteAdd');
+        // The new layer sits on top, below a frame; painting goes on in the layer the user had chosen.
         target.setActive(activeId);
       }
       return true;

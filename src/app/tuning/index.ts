@@ -4,6 +4,7 @@ import { GEOMETRY_TUNING } from './geometry.ts';
 import { PAINT_TUNING } from './paint.ts';
 import { SELECT_TUNING } from './select.ts';
 import { STAGE_TUNING } from './stage.ts';
+import { SHAPES_TUNING } from './shapes.ts';
 import { TEXT_TUNING } from './text.ts';
 import { PARTICLE_TUNING, SFX_TUNING, UI_TUNING } from './ui.ts';
 
@@ -18,5 +19,6 @@ export const TUNING = {
   geometry: GEOMETRY_TUNING,
   adjust: ADJUST_TUNING,
   text: TEXT_TUNING,
+  shapes: SHAPES_TUNING,
   export: EXPORT_TUNING,
 } as const;

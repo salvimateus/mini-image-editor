@@ -27,6 +27,12 @@ export const ADJUST_TUNING = {
   vignette: {
     defaults: { amount: -45, size: 50, roundness: 0, feather: 55 },
   },
+  frame: {
+    width: { min: 1, max: 200, step: 1, default: 2 },
+    defaultColor: { r: 255, g: 0, b: 0, a: 255 },
+    /** "Grow the stage" is on when the panel opens for a new frame. */
+    growDefault: false,
+  },
   /** The sparkle at the stage center on Apply. */
   applyBurst: { count: 26, speed: [140, 340] as const, life: [0.35, 0.7] as const, size: [4, 9] as const, gravity: 260, jitter: 24 },
 } as const;

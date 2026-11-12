@@ -31,18 +31,41 @@ export function layerBounds(doc: EditorDoc, layer: Layer): Rect | null {
   return rect ? { x: rect.x + layer.x, y: rect.y + layer.y, w: rect.w, h: rect.h } : null;
 }
 
-/** The top visible layer with a pixel of alpha > 0 at the document point. */
+/** True when the layer has a pixel of alpha > 0 within `reach` layer px (a square) of the layer point. */
+function hasPixelNear(layer: Layer, lx: number, ly: number, reach: number): boolean {
+  const { width, height, data } = layer.image;
+  const x0 = Math.max(0, lx - reach);
+  const x1 = Math.min(width - 1, lx + reach);
+  const y0 = Math.max(0, ly - reach);
+  const y1 = Math.min(height - 1, ly + reach);
+  const r2 = reach * reach;
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      if ((x - lx) ** 2 + (y - ly) ** 2 > r2) continue;
+      if (data[(y * width + x) * 4 + 3] > 0) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * The top visible layer with a pixel of alpha > 0 at the document point. A shape layer also counts within a few
+ * screen px of its pixels, because a thin border is hard to hit.
+ */
 function layerAt(doc: EditorDoc, x: number, y: number): Layer | null {
   const px = Math.floor(x);
   const py = Math.floor(y);
+  const { hitPx, maxReachPx } = TUNING.select.shapeHit;
+  const shapeReach = Math.min(maxReachPx, Math.ceil(hitPx / Math.max(app.zoom, 1e-6)));
   for (let i = doc.layers.length - 1; i >= 0; i--) {
     const layer = doc.layers[i];
     if (!layer.visible || layer.opacity <= 0) continue;
+    const reach = layer.kind === 'shape' ? shapeReach : 0;
     const lx = px - layer.x;
     const ly = py - layer.y;
-    const { width, height, data } = layer.image;
-    if (lx < 0 || ly < 0 || lx >= width || ly >= height) continue;
-    if (data[(ly * width + lx) * 4 + 3] > 0) return layer;
+    const { width, height } = layer.image;
+    if (lx < -reach || ly < -reach || lx >= width + reach || ly >= height + reach) continue;
+    if (hasPixelNear(layer, lx, ly, reach)) return layer;
   }
   return null;
 }
@@ -137,6 +160,7 @@ export function startTransform(): void {
   const layer = doc.active;
   if (!layer) return hint('select.toast.noLayer');
   if (layer.kind === 'raster' && layer.generator) return hint('select.toast.generated');
+  if (layer.kind === 'shape') return hint('select.toast.shapeHandles');
   const bounds = layerBounds(doc, layer);
   if (!bounds) return hint('select.toast.emptyLayer');
   cancelLift();
@@ -210,12 +234,15 @@ export async function applyTransform(): Promise<void> {
         doc.setTextSpec(layer.id, spec, image);
         doc.setLayerProps(layer.id, at);
       });
-    } else {
+    } else if (layer.kind === 'raster') {
       const local = { x: origin.x - layer.x, y: origin.y - layer.y, w: origin.w, h: origin.h };
       const resized = await app.track(app.engine.resize(cropRaster(layer.image, local), box.w, box.h, 'auto'));
       if (session !== s || !liveSession()) return;
       endSession();
       doc.replaceImage(layer.id, resized, { x: box.x, y: box.y }, 'select.history.transform');
+    } else {
+      // A shape changes its size with its own handles; startTransform never opens a session for it.
+      return;
     }
     sfx.play('resize');
   } catch (error) {

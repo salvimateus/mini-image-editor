@@ -1,10 +1,10 @@
 import { flatten as flattenLayers, sampleComposite, type FlatLayer } from '../core/composite.ts';
 import { translateMask, type Mask } from '../core/mask.ts';
 import { cloneRaster, createRaster, intersectRect, readRect, unionRect, writeRect } from '../core/raster.ts';
-import type { Patch, Point, RasterImage, Rect, Rgba, TextSpec } from '../core/types.ts';
+import type { Patch, Point, RasterImage, Rect, Rgba, ShapeSpec, TextSpec } from '../core/types.ts';
 import { History, type HistoryEntry } from './history.svelte.ts';
 import { t, type TextKey } from './i18n/index.ts';
-import { cloneTextSpec, createRasterLayer, layerRect, type Layer, type LayerBase, type RasterLayer } from './layers.ts';
+import { cloneShapeSpec, cloneTextSpec, createRasterLayer, isRenderedLayer, layerRect, type Layer, type LayerBase, type RasterLayer } from './layers.ts';
 
 export interface Guide { readonly id: number; axis: 'x' | 'y'; pos: number }
 
@@ -361,6 +361,26 @@ export class EditorDoc {
     });
   }
 
+  /** A new shape and its render, at `at` (document px, rounded) or at the same position. Undo puts back all three. */
+  setShapeSpec(id: number, spec: ShapeSpec, image: RasterImage, coalesce?: string, at?: Point): void {
+    const layer = this.layer(id);
+    if (!layer || layer.kind !== 'shape') return;
+    type ShapeState = { spec: ShapeSpec; image: RasterImage; x: number; y: number };
+    const before: ShapeState = { spec: layer.spec, image: layer.image, x: layer.x, y: layer.y };
+    const after: ShapeState = { spec: cloneShapeSpec(spec), image: this.ownImage(image, id), x: at ? Math.round(at.x) : layer.x, y: at ? Math.round(at.y) : layer.y };
+    const apply = (value: ShapeState) => {
+      this.replaceLayer(id, (entry) => (entry.kind === 'shape' ? { ...entry, spec: value.spec, image: value.image, x: value.x, y: value.y } : entry));
+      this.touch();
+    };
+    this.record({
+      label: 'history.shapeEdit',
+      bytes: image.data.byteLength,
+      coalesce: coalesce === undefined ? undefined : `shape:${id}:${coalesce}`,
+      redo: () => apply(after),
+      undo: () => apply(before),
+    });
+  }
+
   /** A new image for the layer, at `at` (document px) or at the same position. The old image stays by reference for undo. */
   replaceImage(id: number, image: RasterImage, at: Point | null, label: TextKey): void {
     const layer = this.layer(id);
@@ -449,7 +469,7 @@ export class EditorDoc {
    */
   private extendBottom(layers: readonly Layer[], oldStage: Rect, w: number, h: number, fill: Rgba): { layers: readonly Layer[]; bytes: number } {
     const stage = { x: 0, y: 0, w, h };
-    const index = layers.findIndex((layer) => layer.kind === 'raster');
+    const index = layers.findIndex((layer) => layer.kind === 'raster' && !layer.generator);
     const inNewArea = (x: number, y: number) =>
       x >= 0 && y >= 0 && x < w && y < h && !(x >= oldStage.x && y >= oldStage.y && x < oldStage.x + oldStage.w && y < oldStage.y + oldStage.h);
     if (index < 0) {
@@ -511,10 +531,10 @@ export class EditorDoc {
 
   // ----- paint target, flatten, sample -----
 
-  /** The active raster layer. For a text layer, a generated layer or no layer, a new raster layer above it (in the history). */
+  /** The active raster layer. For a text, shape or generated layer, or no layer, a new raster layer above it (in the history). */
   paintTarget(): RasterLayer {
     const active = this.active;
-    if (active && active.kind === 'raster' && !active.generator) return active;
+    if (active && active.kind === 'raster' && !isRenderedLayer(active)) return active;
     const layer = createRasterLayer(this.nextLayerName(), createRaster(this.#width, this.#height), 0, 0);
     this.addLayer(layer, undefined, 'history.addLayer');
     return (this.layer(layer.id) as RasterLayer | null) ?? layer;

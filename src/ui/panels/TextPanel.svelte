@@ -14,6 +14,7 @@
   import KeyText from '../base/KeyText.svelte';
   import * as sfx from '../../app/sfx.ts';
   import { app } from '../../app/state.svelte.ts';
+  import { areaWidth } from '../../app/text-render.ts';
   import { TUNING } from '../../app/tuning/index.ts';
   import Keys from '../base/Keys.svelte';
   import SliderField from '../base/SliderField.svelte';
@@ -60,6 +61,7 @@
   const weights = $derived(spec ? (info ? weightsOf(info, spec.italic) : [spec.weight]) : []);
   const italicShown = $derived(!!info && info.italics.length > 0 && info.weights.length > 0);
   const fontBusy = $derived(!!spec && spec.family !== BUNDLED_FAMILY && textSession.font === 'loading');
+  const area = $derived(spec ? areaWidth(spec) : null);
   const fontOffline = $derived(!!spec && spec.family !== BUNDLED_FAMILY && textSession.font === 'offline');
 
   function weightName(weight: number): string {
@@ -71,7 +73,10 @@
   onMount(() => {
     void loadCatalog().then(() => (catalogTick += 1));
     // The panel closes: an empty text goes away, with no undo step left behind.
-    return () => textSession.end();
+    return () => {
+      textSession.end();
+      app.stage?.invalidateFx();
+    };
   });
 
   // A text layer that becomes active (here, in the Layers panel or by undo) starts its own editing session.
@@ -105,6 +110,18 @@
 
   function pickFamily(family: string): void {
     textSession.setFamily(family);
+  }
+
+  function setArea(on: boolean): void {
+    if ((area !== null) === on) return;
+    sfx.play('tick');
+    textSession.setArea(on);
+    app.stage?.invalidateFx();
+  }
+
+  function setBoxWidth(value: number): void {
+    textSession.update({ boxWidth: value }, 'box-width');
+    app.stage?.invalidateFx();
   }
 
   function setCase(id: TextSpec['transform']): void {
@@ -144,6 +161,29 @@
       {/if}
     </div>
   {:else}
+    <div class="field">
+      <span class="field-label" id="text-mode-label">{t('text.mode')}</span>
+      <div class="segmented" role="group" aria-labelledby="text-mode-label">
+        <button type="button" aria-pressed={area === null} onclick={() => setArea(false)}>{t('text.mode.free')}</button>
+        <button type="button" aria-pressed={area !== null} onclick={() => setArea(true)}>{t('text.mode.area')}</button>
+      </div>
+      <span class="text-help">{area === null ? t('text.mode.freeHelp') : t('text.mode.areaHelp')}</span>
+    </div>
+
+    {#if area !== null}
+      <SliderField
+        id="text-box-width"
+        label={t('text.boxWidth')}
+        value={area}
+        min={R.boxWidth.min}
+        max={Math.max(R.boxWidth.min + 1, Math.min(R.boxWidth.max, (app.doc?.width ?? R.boxWidth.max) * 2))}
+        step={R.boxWidth.step}
+        unit="px"
+        oninput={setBoxWidth}
+        onchange={setBoxWidth}
+      />
+    {/if}
+
     <div class="field">
       <label class="field-label" for="text-field">{t('text.field')}</label>
       <textarea

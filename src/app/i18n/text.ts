@@ -2,8 +2,8 @@
 export const ptBR = {
   'text.layerName': 'Texto',
   'text.history.add': 'Novo texto',
-  'text.hint.click': 'Escrever aqui ou editar um texto',
-  'text.hint.drag': 'Mover o texto ativo',
+  'text.hint.click': 'Texto livre aqui, ou editar um texto',
+  'text.hint.area': 'Marcar uma área de texto, ou mover um texto',
   'text.hint.free': 'Mover sem encaixe',
   'text.hint.done': 'Terminar o texto',
   'text.panel.empty': 'Com a ferramenta Texto, clique na imagem para escrever. Clique num texto para editar.',
@@ -69,13 +69,19 @@ export const ptBR = {
   'text.picker.bundledTag': 'no app',
   'text.options.size': 'Tamanho do texto',
   'text.options.next': 'Próximo texto',
+  'text.mode': 'Tipo de texto',
+  'text.mode.free': 'Texto livre',
+  'text.mode.area': 'Texto em área',
+  'text.mode.freeHelp': 'Uma linha só, que cresce para o lado. Enter quebra a linha.',
+  'text.mode.areaHelp': 'As linhas quebram sozinhas na largura da área.',
+  'text.boxWidth': 'Largura da área',
 } as const;
 
 export const en: Record<keyof typeof ptBR, string> = {
   'text.layerName': 'Text',
   'text.history.add': 'New text',
-  'text.hint.click': 'Write here or edit a text',
-  'text.hint.drag': 'Move the active text',
+  'text.hint.click': 'Free text here, or edit a text',
+  'text.hint.area': 'Mark a text area, or move a text',
   'text.hint.free': 'Move without snap',
   'text.hint.done': 'Finish the text',
   'text.panel.empty': 'With the Text tool, click the image to write. Click a text to edit it.',
@@ -141,4 +147,10 @@ export const en: Record<keyof typeof ptBR, string> = {
   'text.picker.bundledTag': 'in the app',
   'text.options.size': 'Text size',
   'text.options.next': 'Next text',
+  'text.mode': 'Text type',
+  'text.mode.free': 'Free text',
+  'text.mode.area': 'Area text',
+  'text.mode.freeHelp': 'One line that grows to the side. Enter starts a new line.',
+  'text.mode.areaHelp': 'The lines break by themselves at the width of the area.',
+  'text.boxWidth': 'Area width',
 };

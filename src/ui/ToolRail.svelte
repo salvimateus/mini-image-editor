@@ -5,6 +5,7 @@
   import Crop from '@lucide/svelte/icons/crop';
   import Eraser from '@lucide/svelte/icons/eraser';
   import Hand from '@lucide/svelte/icons/hand';
+  import ListOrdered from '@lucide/svelte/icons/list-ordered';
   import Lasso from '@lucide/svelte/icons/lasso';
   import Move from '@lucide/svelte/icons/move';
   import PaintBucket from '@lucide/svelte/icons/paint-bucket';
@@ -12,6 +13,7 @@
   import Pipette from '@lucide/svelte/icons/pipette';
   import SquareDashed from '@lucide/svelte/icons/square-dashed';
   import Stamp from '@lucide/svelte/icons/stamp';
+  import Shapes from '@lucide/svelte/icons/shapes';
   import Type from '@lucide/svelte/icons/type';
   import WandSparkles from '@lucide/svelte/icons/wand-sparkles';
   import ZoomIn from '@lucide/svelte/icons/zoom-in';
@@ -36,6 +38,8 @@
     bucket: { icon: PaintBucket, label: 'chrome.tool.bucket', action: 'tool.bucket' },
     clone: { icon: Stamp, label: 'chrome.tool.clone', action: 'tool.clone' },
     text: { icon: Type, label: 'chrome.tool.text', action: 'tool.text' },
+    shape: { icon: Shapes, label: 'chrome.tool.shape', action: 'tool.shape' },
+    step: { icon: ListOrdered, label: 'chrome.tool.step', action: 'tool.step' },
     hand: { icon: Hand, label: 'chrome.tool.hand', action: 'tool.hand' },
     zoom: { icon: ZoomIn, label: 'chrome.tool.zoom', action: 'tool.zoom' },
   };
@@ -45,6 +49,7 @@
     ['marquee-rect', 'marquee-ellipse', 'lasso', 'wand'],
     ['crop'],
     ['brush', 'pencil', 'eraser', 'bucket', 'clone'],
+    ['shape', 'step'],
     ['eyedropper'],
     ['text'],
     ['hand', 'zoom'],
@@ -107,7 +112,8 @@
       padding: var(--group-gap) 0;
     }
 
-    @container (max-height: 760px) {
+    /* Each step holds the 17 tools in 8 groups: about 850, 690, 572 and 513 px tall. A 960 x 640 window gives the rail about 556 px. */
+    @container (max-height: 860px) {
       .rail-inner {
         --tool-size: 34px;
         --tool-gap: 2px;
@@ -116,12 +122,21 @@
       }
     }
 
-    @container (max-height: 620px) {
+    @container (max-height: 700px) {
       .rail-inner {
         --tool-size: 28px;
         --tool-gap: 2px;
         --group-gap: 4px;
         --icon-size: 16px;
+      }
+    }
+
+    @container (max-height: 580px) {
+      .rail-inner {
+        --tool-size: 26px;
+        --tool-gap: 1px;
+        --group-gap: 3px;
+        --icon-size: 15px;
       }
     }
 

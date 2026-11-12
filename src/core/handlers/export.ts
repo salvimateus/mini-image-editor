@@ -1,6 +1,5 @@
 import { encodeImage } from '../encode/index.ts';
 import { CoreError } from '../errors.ts';
-import { PARAMS } from '../params/index.ts';
 import type { Handler } from '../protocol.ts';
 
 /** A buffer that holds exactly the file, so the transfer sends no extra bytes. */
@@ -9,11 +8,9 @@ function exactBuffer(bytes: Uint8Array): ArrayBuffer {
   return bytes.slice().buffer as ArrayBuffer;
 }
 
-/** Above the pixel limit the estimate makes only the plain file, and both numbers are its size. */
+/** A quick estimate makes only the plain size, and both numbers are that size; else the optimized size too. */
 export const estimate: Handler<'estimate'> = async (request, context) => {
-  const { image, options } = request;
-  const optimize = options.format === 'ico' || image.width * image.height <= PARAMS.export.estimateFullMaxPixels;
-  const file = await encodeImage(image, options, { optimize, progress: context.progress });
+  const file = await encodeImage(request.image, request.options, { optimize: request.quick !== true, progress: context.progress });
   return { reply: { type: 'estimate', plainBytes: file.plainSize, bytes: file.bytes?.length ?? file.plainSize } };
 };
 

@@ -1,5 +1,6 @@
 import type { Component } from 'svelte';
 import type { PanelId } from '../../app/state.svelte.ts';
+import Frame from './Frame.svelte';
 import HueSaturation from './HueSaturation.svelte';
 import Levels from './Levels.svelte';
 import Sharpen from './Sharpen.svelte';
@@ -13,4 +14,5 @@ export const PANELS: Record<Exclude<PanelId, 'none'>, Component> = {
   sharpen: Sharpen,
   vignette: Vignette,
   text: TextPanel,
+  frame: Frame,
 };

@@ -15,6 +15,7 @@ export type ActionId =
   | 'adjust.levels'
   | 'adjust.sharpen'
   | 'adjust.vignette'
+  | 'adjust.frame'
   | 'select.all'
   | 'select.none'
   | 'select.invert'
@@ -93,6 +94,8 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   { id: 'tool.bucket', combos: [key('g')], label: 'chrome.tool.bucket', group: 'tools' },
   { id: 'tool.clone', combos: [key('s')], label: 'chrome.tool.clone', group: 'tools' },
   { id: 'tool.text', combos: [key('t')], label: 'chrome.tool.text', group: 'tools' },
+  { id: 'tool.shape', combos: [key('u')], label: 'chrome.tool.shape', group: 'tools' },
+  { id: 'tool.step', combos: [key('n')], label: 'chrome.tool.step', group: 'tools' },
   { id: 'tool.hand', combos: [key('h')], label: 'chrome.tool.hand', group: 'tools' },
   { id: 'tool.zoom', combos: [key('z')], label: 'chrome.tool.zoom', group: 'tools' },
   { id: 'paint.sizeDown', combos: [key('[')], label: 'action.paint.sizeDown', group: 'tools' },
@@ -109,6 +112,7 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   { id: 'adjust.levels', combos: [ctrl('l')], label: 'action.adjust.levels', group: 'adjust' },
   { id: 'adjust.sharpen', combos: [], label: 'action.adjust.sharpen', group: 'adjust' },
   { id: 'adjust.vignette', combos: [], label: 'action.adjust.vignette', group: 'adjust' },
+  { id: 'adjust.frame', combos: [], label: 'action.adjust.frame', group: 'adjust' },
 
   { id: 'select.all', combos: [ctrl('a')], label: 'action.select.all', group: 'select' },
   { id: 'select.none', combos: [ctrl('d')], label: 'action.select.none', group: 'select' },

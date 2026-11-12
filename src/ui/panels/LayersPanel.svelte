@@ -1,11 +1,14 @@
 <script lang="ts">
+  import CircleDot from '@lucide/svelte/icons/circle-dot';
   import Copy from '@lucide/svelte/icons/copy';
   import Eye from '@lucide/svelte/icons/eye';
+  import Frame from '@lucide/svelte/icons/frame';
   import EyeOff from '@lucide/svelte/icons/eye-off';
   import ImagePlus from '@lucide/svelte/icons/image-plus';
   import Merge from '@lucide/svelte/icons/merge';
   import Pencil from '@lucide/svelte/icons/pencil';
   import Plus from '@lucide/svelte/icons/plus';
+  import Shapes from '@lucide/svelte/icons/shapes';
   import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
   import Sparkles from '@lucide/svelte/icons/sparkles';
   import Trash from '@lucide/svelte/icons/trash';
@@ -13,7 +16,7 @@
   import { backOut } from 'svelte/easing';
   import { actionEnabled, runAction } from '../../app/actions/index.ts';
   import type { EditorDoc } from '../../app/doc.svelte.ts';
-  import { t } from '../../app/i18n/index.ts';
+  import { t, type TextKey } from '../../app/i18n/index.ts';
   import type { Layer } from '../../app/layers.ts';
   import { keyLabels, shortcutOf, type ActionId } from '../../app/shortcuts.ts';
   import * as sfx from '../../app/sfx.ts';
@@ -147,20 +150,35 @@
     sfx.play('tick');
   }
 
-  /** A text layer opens the Text tool and panel; a generated layer opens its generator panel. */
-  function canEdit(layer: Layer): boolean {
-    return layer.kind === 'text' || (layer.kind === 'raster' && layer.generator !== undefined);
+  interface EditorMeta { mark: typeof Type; markLabel: TextKey; tone: 'text' | 'shape' | 'generated'; edit: typeof Pencil; editLabel: TextKey }
+
+  /** The mark and the edit button of a layer that has its own editor; null for a plain raster layer. */
+  function editorMeta(layer: Layer): EditorMeta | null {
+    if (layer.kind === 'text') return { mark: Type, markLabel: 'select.layers.text', tone: 'text', edit: Pencil, editLabel: 'select.layers.editText' };
+    if (layer.kind === 'shape') {
+      return layer.spec.kind === 'step'
+        ? { mark: CircleDot, markLabel: 'select.layers.step', tone: 'shape', edit: Pencil, editLabel: 'select.layers.editStep' }
+        : { mark: Shapes, markLabel: 'select.layers.shape', tone: 'shape', edit: Pencil, editLabel: 'select.layers.editShape' };
+    }
+    if (layer.generator?.kind === 'frame') return { mark: Frame, markLabel: 'select.layers.frame', tone: 'generated', edit: SlidersHorizontal, editLabel: 'select.layers.editFrame' };
+    if (layer.generator) return { mark: Sparkles, markLabel: 'select.layers.generated', tone: 'generated', edit: SlidersHorizontal, editLabel: 'select.layers.editGenerated' };
+    return null;
   }
 
+  /** Makes the layer active and opens its editor: the tool of a text or shape layer, the panel of a generated layer. */
   function openEditor(layer: Layer): void {
-    if (!doc || !canEdit(layer)) return;
+    if (!doc || !editorMeta(layer)) return;
     if (doc.activeId !== layer.id) doc.setActive(layer.id);
     if (layer.kind === 'text') {
       if (app.tool === 'text') sfx.play('tick');
       app.setTool('text');
       app.openPanel('text');
-    } else {
-      runAction('adjust.vignette', 'pointer');
+    } else if (layer.kind === 'shape') {
+      const tool = layer.spec.kind === 'step' ? 'step' : 'shape';
+      if (app.tool === tool) sfx.play('tick');
+      app.setTool(tool);
+    } else if (layer.generator) {
+      runAction(layer.generator.kind === 'frame' ? 'adjust.frame' : 'adjust.vignette', 'pointer');
     }
   }
 
@@ -270,6 +288,7 @@
     <ol class="layer-list" aria-label={t('select.layers.list')} bind:this={list}>
       {#each rows as layer, index (layer.id)}
         {@const isActive = layer.id === doc.activeId}
+        {@const meta = editorMeta(layer)}
         <li
           class="layer-row"
           class:is-active={isActive}
@@ -295,8 +314,21 @@
           >
             {#if layer.visible}<Eye size={16} />{:else}<EyeOff size={16} />{/if}
           </button>
-          <span class="row-thumb" aria-hidden="true">
-            <canvas use:thumbnail={{ doc, layer, tick: thumbTick, w: doc.width, h: doc.height }}></canvas>
+          <span class="row-thumb">
+            <canvas aria-hidden="true" use:thumbnail={{ doc, layer, tick: thumbTick, w: doc.width, h: doc.height }}></canvas>
+            {#if meta}
+              {@const Mark = meta.mark}
+              <span
+                class="row-mark"
+                class:is-generated={meta.tone === 'generated'}
+                class:is-shape={meta.tone === 'shape'}
+                role="img"
+                aria-label={t(meta.markLabel)}
+                use:tooltip={{ text: t(meta.markLabel) }}
+              >
+                <Mark size={11} strokeWidth={2.75} />
+              </span>
+            {/if}
           </span>
           {#if editingId === layer.id}
             <input
@@ -315,7 +347,7 @@
             <button
               type="button"
               class="row-name"
-              use:tooltip={{ text: t('select.layers.renameTip') }}
+              use:tooltip={{ text: t('select.layers.nameTip', { name: layer.name }) }}
               onclick={() => select(layer)}
               ondblclick={() => startRename(layer)}
               onkeydown={(event) => {
@@ -329,23 +361,11 @@
               {#if !layer.visible}<span class="visually-hidden">({t('select.layers.hidden')})</span>{/if}
             </button>
           {/if}
-          {#if canEdit(layer)}
-            {@const isText = layer.kind === 'text'}
-            {@const editLabel = isText ? t('select.layers.editText') : t('select.layers.editGenerated')}
-            <span class="row-tail">
-              <span
-                class="row-mark"
-                class:is-generated={!isText}
-                role="img"
-                aria-label={isText ? t('select.layers.text') : t('select.layers.generated')}
-                use:tooltip={{ text: isText ? t('select.layers.text') : t('select.layers.generated') }}
-              >
-                {#if isText}<Type size={14} strokeWidth={2.5} />{:else}<Sparkles size={14} strokeWidth={2.5} />{/if}
-              </span>
-              <button type="button" class="row-edit" aria-label={editLabel} use:tooltip={{ text: editLabel }} onclick={() => openEditor(layer)}>
-                {#if isText}<Pencil size={14} strokeWidth={2.5} />{:else}<SlidersHorizontal size={14} strokeWidth={2.5} />{/if}
-              </button>
-            </span>
+          {#if meta}
+            {@const Edit = meta.edit}
+            <button type="button" class="row-edit" aria-label={t(meta.editLabel)} use:tooltip={{ text: t(meta.editLabel) }} onclick={() => openEditor(layer)}>
+              <Edit size={14} strokeWidth={2.5} />
+            </button>
           {/if}
         </li>
       {/each}
@@ -492,6 +512,7 @@
     }
 
     .row-thumb {
+      position: relative;
       display: grid;
       place-items: center;
       width: 44px;
@@ -538,12 +559,6 @@
       font-weight: 700;
     }
 
-    .row-tail {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-1);
-    }
-
     .row-edit {
       display: inline-grid;
       place-items: center;
@@ -567,17 +582,26 @@
       }
     }
 
+    /* The kind badge sits on the thumbnail corner, so the name keeps the free width of the row. */
     .row-mark {
+      position: absolute;
+      right: -4px;
+      bottom: -4px;
       display: inline-grid;
       place-items: center;
-      width: 22px;
-      height: 22px;
+      width: 18px;
+      height: 18px;
       color: var(--teal);
-      background: var(--surface-2);
+      background: var(--surface-1);
+      border: 2px solid var(--line-strong);
       border-radius: var(--radius-pill);
 
       &.is-generated {
         color: var(--yellow);
+      }
+
+      &.is-shape {
+        color: var(--pink);
       }
     }
 

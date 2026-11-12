@@ -15,6 +15,8 @@ export const SELECT_TUNING = {
   handle: { sizePx: 10, hitPx: 10 },
   /** The size label under the transform box, in screen px. */
   sizeLabel: { gapPx: 10, padPx: 6, heightPx: 20, font: '800 12px "Nunito Variable", "Nunito", system-ui, sans-serif' },
+  /** The Move tool picks a shape layer within this distance (screen px) of its pixels, capped in document px. */
+  shapeHit: { hitPx: 6, maxReachPx: 48 },
   /** The smallest side of a transform box, in document px. */
   transformMinPx: 1,
   /** Arrow keys move the layer this far, in document px; Shift uses `big`. */

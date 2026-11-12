@@ -10,6 +10,8 @@ import { marqueeEllipseTool } from './marquee-ellipse.ts';
 import { marqueeRectTool } from './marquee-rect.ts';
 import { moveTool } from './move.ts';
 import { pencilTool } from './pencil.ts';
+import { shapeTool } from './shape.ts';
+import { stepTool } from './step.ts';
 import { textTool } from './text.ts';
 import type { ToolController, ToolId } from './types.ts';
 import { wandTool } from './wand.ts';
@@ -32,6 +34,8 @@ export const TOOLS: Record<ToolId, ToolController> = {
   bucket: bucketTool,
   clone: cloneTool,
   text: textTool,
+  shape: shapeTool,
+  step: stepTool,
   hand: handTool,
   zoom: zoomTool,
 };

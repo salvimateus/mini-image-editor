@@ -7,6 +7,11 @@ export const ptBR = {
   'error.internal': 'Algo deu errado. Tente de novo.',
   'doc.layerName': 'Camada {n}',
   'doc.backgroundName': 'Fundo',
+  'doc.rectName': 'Retângulo',
+  'doc.ellipseName': 'Elipse',
+  'doc.arrowName': 'Seta',
+  'doc.stepName': 'Passo {n}',
+  'doc.frameName': 'Moldura',
   'history.edit': 'Edição',
   'history.addLayer': 'Nova camada',
   'history.removeLayer': 'Apagar camada',
@@ -19,6 +24,10 @@ export const ptBR = {
   'history.paint': 'Pintura',
   'history.selection': 'Seleção',
   'history.guides': 'Guias',
+  'history.addShape': 'Nova forma',
+  'history.addStep': 'Novo passo',
+  'history.shapeEdit': 'Editar forma',
+  'history.frame': 'Moldura',
 } as const;
 
 export const en: Record<keyof typeof ptBR, string> = {
@@ -30,6 +39,11 @@ export const en: Record<keyof typeof ptBR, string> = {
   'error.internal': 'Something went wrong. Try again.',
   'doc.layerName': 'Layer {n}',
   'doc.backgroundName': 'Background',
+  'doc.rectName': 'Rectangle',
+  'doc.ellipseName': 'Ellipse',
+  'doc.arrowName': 'Arrow',
+  'doc.stepName': 'Step {n}',
+  'doc.frameName': 'Frame',
   'history.edit': 'Edit',
   'history.addLayer': 'New layer',
   'history.removeLayer': 'Delete layer',
@@ -42,4 +56,8 @@ export const en: Record<keyof typeof ptBR, string> = {
   'history.paint': 'Paint',
   'history.selection': 'Selection',
   'history.guides': 'Guides',
+  'history.addShape': 'New shape',
+  'history.addStep': 'New step',
+  'history.shapeEdit': 'Edit shape',
+  'history.frame': 'Frame',
 };

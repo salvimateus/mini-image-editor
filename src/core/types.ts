@@ -46,4 +46,21 @@ export interface TextSpec {
   transform: 'none' | 'upper' | 'lower' | 'capitalize';
   stroke: { on: boolean; color: Rgba; width: number };
   shadow: { on: boolean; color: Rgba; blur: number; dx: number; dy: number };
+  /** Wrap width in px; null or undefined = free text. */
+  boxWidth?: number | null;
 }
+
+/** width 0 = no border. */
+export interface StrokeStyle { color: Rgba; width: number }
+
+/**
+ * The geometry and look of a shape layer. An arrow runs from the tail (0, 0) to the head (dx, dy); its size is the
+ * line width (thin) or the body width (thick) and its fill is the arrow color. The size of a step is its diameter.
+ */
+export type ShapeSpec =
+  | { kind: 'rect'; w: number; h: number; radius: number; stroke: StrokeStyle; fill: Rgba | null }
+  | { kind: 'ellipse'; w: number; h: number; stroke: StrokeStyle; fill: Rgba | null }
+  | { kind: 'arrow'; dx: number; dy: number; style: 'thin' | 'thick'; size: number; fill: Rgba; stroke: StrokeStyle }
+  | { kind: 'step'; number: number; size: number; fill: Rgba; stroke: StrokeStyle; textColor: Rgba; shadow?: boolean }; // shadow: a drop shadow under the badge; no value = on
+
+export interface FrameParams { width: number; color: Rgba }

@@ -29,6 +29,10 @@
   const ratio = $derived(doc ? ratioLabel(doc.width, doc.height) : { text: '', preset: null });
   const zoomPct = $derived(Math.round(app.zoom * 100));
   const formatLabel = $derived(FORMAT_INFO[app.lastFormat].label);
+  const weightUpper = $derived(app.weight.upper === true && app.weight.bytes !== null);
+  const weightTip = $derived(
+    weightUpper ? t('chrome.status.weightUpperTip', { format: formatLabel }) : t('chrome.status.weight', { format: formatLabel }),
+  );
 
   let zoomOpen = $state(false);
   let zoomBox = $state<HTMLDivElement>();
@@ -90,15 +94,22 @@
       {/if}
     </div>
 
-    <span class="cell weight" use:tooltip={{ text: t('chrome.status.weight', { format: formatLabel }) }}>
+    <span class="cell weight" use:tooltip={{ text: weightTip }}>
       <span class="weight-format">{formatLabel}</span>
-      {#if app.weight.pending}
-        <span class="weight-pending">{t('chrome.status.weightPending')}</span>
-      {:else if app.weight.bytes !== null}
-        {#key app.weight.bytes}<span class="weight-value">{formatBytes(app.weight.bytes)}</span>{/key}
-      {:else}
-        <span class="weight-pending">{t('chrome.status.weightNone')}</span>
-      {/if}
+      <span class="weight-slot">
+        {#if weightUpper && app.weight.bytes !== null}
+          <span class="weight-upper">
+            {t('chrome.status.weightUpper', { size: formatBytes(app.weight.bytes) })}
+            <span class="weight-working" aria-hidden="true"></span>
+          </span>
+        {:else if app.weight.pending}
+          <span class="weight-pending">{t('chrome.status.weightPending')}</span>
+        {:else if app.weight.bytes !== null}
+          {#key app.weight.bytes}<span class="weight-value">{formatBytes(app.weight.bytes)}</span>{/key}
+        {:else}
+          <span class="weight-pending">{t('chrome.status.weightNone')}</span>
+        {/if}
+      </span>
     </span>
 
     <span class="spacer"></span>
@@ -234,6 +245,39 @@
     .weight-value {
       color: var(--text);
       animation: value-pop var(--dur-pop) var(--ease-spring);
+    }
+
+    /* One width for every state, so the cells after it do not jump. */
+    .weight-slot {
+      display: inline-flex;
+      align-items: center;
+      min-width: 8.5em;
+    }
+
+    .weight-upper {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      color: var(--text-muted);
+    }
+
+    .weight-working {
+      width: 6px;
+      height: 6px;
+      background: var(--primary);
+      border-radius: var(--radius-pill);
+      animation: weight-breathe 1.6s var(--ease-sym) infinite alternate;
+    }
+
+    @keyframes weight-breathe {
+      from {
+        opacity: 0.25;
+        scale: 0.7;
+      }
+      to {
+        opacity: 0.9;
+        scale: 1;
+      }
     }
 
     .weight-pending {
