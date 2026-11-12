@@ -1,0 +1,57 @@
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+  import * as sfx from '../../app/sfx.ts';
+
+  interface Props {
+    open: boolean;
+    labelledby: string;
+    /** Escape, a click on the backdrop and the close buttons all end here. */
+    onclose: () => void;
+    wide?: boolean;
+    children: Snippet;
+  }
+
+  let { open, labelledby, onclose, wide = false, children }: Props = $props();
+  let dialog: HTMLDialogElement;
+
+  $effect(() => {
+    if (open && !dialog.open) {
+      dialog.showModal();
+      sfx.play('tool');
+      // The browser focuses the first control; a dialog can name a more useful one with `data-autofocus`.
+      dialog.querySelector<HTMLElement>('[data-autofocus]')?.focus({ preventScroll: true });
+    } else if (!open && dialog.open) dialog.close();
+  });
+
+  function dismiss(): void {
+    sfx.play('cancel');
+    onclose();
+  }
+</script>
+
+<dialog
+  bind:this={dialog}
+  class="dialog"
+  class:dialog-wide={wide}
+  aria-labelledby={labelledby}
+  oncancel={(event) => {
+    event.preventDefault();
+    dismiss();
+  }}
+  onclick={(event) => {
+    if (event.target === dialog) dismiss();
+  }}
+>
+  {#if open}
+    {@render children()}
+  {/if}
+</dialog>
+
+<style>
+  @layer components {
+    /* The export dialogs: about 40% wider than a plain dialog (480px), so long file names fit on one line. */
+    .dialog-wide {
+      width: min(672px, calc(100vw - 32px));
+    }
+  }
+</style>

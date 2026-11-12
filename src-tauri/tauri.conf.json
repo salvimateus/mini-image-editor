@@ -1,0 +1,39 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Mini Image Editor",
+  "mainBinaryName": "MiniImageEditor",
+  "version": "0.1.0",
+  "identifier": "app.miniimageeditor.desktop",
+  "build": {
+    "devUrl": "http://localhost:5174",
+    "frontendDist": "../dist",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "removeUnusedCommands": true,
+    "windows": { "staticVCRuntime": true }
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Mini Image Editor",
+        "width": 1600,
+        "height": 900,
+        "minWidth": 960,
+        "minHeight": 640,
+        "center": true,
+        "visible": false,
+        "backgroundColor": "#202734",
+        "dragDropEnabled": false,
+        "zoomHotkeysEnabled": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; worker-src 'self' blob:; connect-src 'self' ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "copyright": "Copyright (c) 2026 Mateus Salvi",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"]
+  }
+}

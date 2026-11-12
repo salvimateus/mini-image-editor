@@ -1,0 +1,127 @@
+@layer base {
+  :root {
+    color-scheme: dark;
+
+    /* The user palette. Every program color below derives from these four values. */
+    --palette-navy: #202734;
+    --palette-slate: #36415a;
+    --palette-green: #b7d894;
+    --palette-pale: #e0f8c7;
+
+    /* Surfaces climb from the navy base to the slate raised surface, on the navy hue.
+       Literal oklch values: the stage renderer reads some of them into canvas styles. */
+    --bg: var(--palette-navy);
+    --surface-sunken: oklch(0.235 0.022 263);
+    --surface-1: oklch(0.3 0.032 264);
+    --surface-2: oklch(0.335 0.038 265);
+    --surface-3: var(--palette-slate);
+    --surface-hover: oklch(0.42 0.048 266);
+    --line: oklch(0.46 0.046 266);
+    --line-strong: oklch(0.57 0.05 266);
+    --depth: oklch(0.18 0.02 263);
+    --overlay: color-mix(in oklch, var(--depth) 76%, transparent);
+    --hairline: color-mix(in oklch, var(--palette-pale) 16%, transparent);
+    --hairline-strong: color-mix(in oklch, var(--palette-pale) 50%, transparent);
+    --stripe: color-mix(in oklch, var(--palette-pale) 3%, transparent);
+
+    /* Text is the pale green, softened toward white for long reads. */
+    --text: oklch(0.965 0.04 129);
+    --text-muted: oklch(0.88 0.05 129);
+    --text-faint: oklch(0.79 0.05 129);
+
+    --primary: var(--palette-green);
+    --primary-hover: oklch(0.895 0.09 129);
+    --primary-edge: oklch(0.74 0.1 129);
+    --primary-depth: oklch(0.47 0.075 129);
+    --primary-glow: oklch(0.8415 0.0972 129.33 / 0.32);
+    --primary-fill: oklch(0.8415 0.0972 129.33 / 0.16);
+    --on-primary: var(--palette-navy);
+
+    /* The palette has one hue family. The semantic hues keep the lightness and chroma of the palette greens. */
+    --teal: oklch(0.84 0.09 230);
+    --yellow: oklch(0.87 0.1 95);
+    --mint: var(--palette-green);
+    --pink: var(--palette-pale);
+    --danger: oklch(0.8 0.105 25);
+    --danger-hover: oklch(0.85 0.085 25);
+    --danger-edge: oklch(0.7 0.115 25);
+    --danger-depth: oklch(0.43 0.08 25);
+    --danger-text: oklch(0.89 0.06 25);
+    --on-danger: var(--palette-navy);
+    --focus: var(--primary);
+    /* The channel labels of the Levels histogram: they name a real color, so they keep its hue. */
+    --channel-red: oklch(0.72 0.17 25);
+    --channel-green: oklch(0.8 0.16 145);
+    --channel-blue: oklch(0.72 0.14 255);
+
+    /* Neutral grays: a tinted checkerboard would shift the colors of transparent edges. */
+    --checker-a: oklch(0.38 0 0);
+    --checker-b: oklch(0.3 0 0);
+
+    /* Canvas colors. The stage renderer reads every --stage-* value once at startup,
+       so each one resolves to a plain color (no color-mix). */
+    --stage-bg: oklch(0.225 0.022 263);
+    --stage-checker-a: var(--checker-a);
+    --stage-checker-b: var(--checker-b);
+    --stage-accent: var(--primary);
+    --stage-accent-fill: var(--primary-fill);
+    /* Spark and confetti slots: palette greens. */
+    --stage-teal: var(--primary-hover);
+    --stage-yellow: var(--palette-pale);
+    --stage-pink: var(--primary-edge);
+    --stage-danger: var(--danger);
+    /* The light and dark halo pair: near white and near black, tinted by the palette. */
+    --stage-white: oklch(0.985 0.02 129);
+    --stage-black: oklch(0.15 0.02 263);
+    --stage-shadow: oklch(0.12 0.02 263 / 0.7);
+    --stage-edge: oklch(0.949 0.069 129 / 0.22);
+    --stage-guide: oklch(0.88 0.16 130);
+    --stage-grid: oklch(0.949 0.069 129 / 0.18);
+    --stage-grid-strong: oklch(0.949 0.069 129 / 0.34);
+    --stage-snap: oklch(0.97 0.06 129);
+    --stage-ants-a: var(--stage-white);
+    --stage-ants-b: var(--stage-black);
+    --stage-handle: var(--stage-white);
+    --stage-handle-edge: oklch(0.4 0.07 129);
+    --stage-shade: oklch(0.15 0.02 263 / 0.6);
+    --stage-ring: oklch(0.8415 0.0972 129.33 / 0.9);
+    --stage-ruler: var(--surface-1);
+    --stage-ruler-line: var(--line-strong);
+    --stage-ruler-text: var(--text-faint);
+    --stage-panel: var(--surface-1);
+    --stage-panel-edge: var(--line-strong);
+    --stage-flash: oklch(0.95 0.07 129);
+
+    --font-display: 'Nunito Variable', 'Nunito', system-ui, sans-serif;
+    --font-body: 'Nunito Variable', 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: ui-monospace, 'Cascadia Mono', Consolas, 'Liberation Mono', monospace;
+
+    --radius-s: 8px;
+    --radius-m: 12px;
+    --radius-l: 18px;
+    --radius-xl: 26px;
+    --radius-pill: 999px;
+
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
+
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --ease-sym: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --dur-instant: 80ms;
+    --dur-hover: 120ms;
+    --dur-pop: 200ms;
+    --dur-modal: 260ms;
+    --dur-screen: 380ms;
+
+    --header-h: 52px;
+    --status-h: 32px;
+    --rail-w: 56px;
+    --panel-w: clamp(280px, 20vw, 340px);
+  }
+}

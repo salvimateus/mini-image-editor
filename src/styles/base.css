@@ -1,0 +1,493 @@
+@layer base {
+  html {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 100%;
+  }
+
+  body {
+    background: var(--bg);
+    overflow: clip;
+    user-select: none;
+    -webkit-user-select: none;
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  :is(input, textarea, code, .selectable) {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--primary), transparent 60%);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-delay: 0ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      transition-delay: 0ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 40px;
+    padding: 0 var(--space-4);
+    font: 800 0.9375rem/1 var(--font-display);
+    letter-spacing: 0.01em;
+    color: var(--text);
+    background: var(--surface-3);
+    border: 2px solid var(--line-strong);
+    border-radius: var(--radius-m);
+    box-shadow: 0 4px 0 var(--btn-depth, var(--depth));
+    white-space: nowrap;
+    transition:
+      transform var(--dur-hover) var(--ease-spring),
+      box-shadow var(--dur-hover) var(--ease-sym),
+      background-color var(--dur-hover) var(--ease-sym);
+
+    &:hover:not(:disabled) {
+      background: var(--surface-hover);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 var(--btn-depth, var(--depth));
+      transition-duration: 60ms;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+  }
+
+  .btn-primary {
+    --btn-depth: var(--primary-depth);
+    color: var(--on-primary);
+    background: var(--primary);
+    border-color: var(--primary-edge);
+
+    &:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+  }
+
+  .btn-danger {
+    --btn-depth: var(--danger-depth);
+    color: var(--on-danger);
+    background: var(--danger);
+    border-color: var(--danger-edge);
+
+    &:hover:not(:disabled) {
+      background: var(--danger-hover);
+    }
+  }
+
+  .btn-big {
+    min-height: 52px;
+    padding: 0 var(--space-5);
+    font-size: 1.125rem;
+    border-radius: var(--radius-l);
+  }
+
+  .btn-small {
+    min-height: 32px;
+    padding: 0 var(--space-3);
+    font-size: 0.8125rem;
+    border-radius: var(--radius-s);
+    box-shadow: 0 3px 0 var(--btn-depth, var(--depth));
+  }
+
+  .btn-quiet {
+    background: transparent;
+    border-color: var(--line);
+    box-shadow: none;
+
+    &:hover:not(:disabled) {
+      background: var(--surface-2);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+  }
+
+  .icon-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    color: var(--text-muted);
+    border-radius: var(--radius-m);
+    border: 2px solid transparent;
+    transition:
+      transform var(--dur-hover) var(--ease-spring),
+      background-color var(--dur-hover) var(--ease-sym),
+      color var(--dur-hover) var(--ease-sym);
+
+    &:hover:not(:disabled) {
+      color: var(--text);
+      background: var(--surface-3);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(2px) scale(0.94);
+      transition-duration: 60ms;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.35;
+    }
+
+    &[aria-pressed='true'] {
+      color: var(--on-primary);
+      background: var(--primary);
+    }
+  }
+
+  .panel {
+    background: var(--surface-1);
+    border: 2px solid var(--line);
+    border-radius: var(--radius-l);
+  }
+
+  /* One card of the right column: the Color and Layers panels and each feature panel. */
+  .side-panel {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--surface-2);
+    border: 2px solid var(--line);
+    border-radius: var(--radius-l);
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: var(--text);
+  }
+
+  /* One look for every visible key: a small key with a lighter face and a darker lower edge. Sizes follow the text, in em. */
+  .keycap {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.9em;
+    height: 1.9em;
+    padding: 0 0.45em;
+    color: var(--text);
+    background: linear-gradient(var(--surface-3), var(--surface-2));
+    border: 1px solid var(--line-strong);
+    border-radius: 0.45em;
+    box-shadow: 0 0.16em 0 var(--depth);
+    font: 800 0.8125em/1 var(--font-display);
+    white-space: nowrap;
+    vertical-align: middle;
+    transition:
+      transform var(--dur-instant) var(--ease-sym),
+      box-shadow var(--dur-instant) var(--ease-sym),
+      background-color var(--dur-hover) var(--ease-sym),
+      color var(--dur-hover) var(--ease-sym);
+
+    /* A physical press of this key. */
+    &.is-pressed {
+      color: var(--on-primary);
+      background: var(--primary);
+      border-color: var(--primary-edge);
+      box-shadow: 0 0.04em 0 var(--primary-depth);
+      transform: translateY(0.12em);
+    }
+
+    /* A click on a button that has a shortcut: the keys tap slowly, to teach the shortcut. */
+    &.is-hint {
+      border-color: var(--primary-edge);
+      color: var(--primary-hover);
+      animation: keycap-tap 640ms var(--ease-sym) 3;
+    }
+  }
+
+  /* A mouse gesture of a hint (Click, Drag, Wheel): a chip next to the keycaps, never a key. */
+  .pointer-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    height: 1.9em;
+    padding: 0 0.6em;
+    color: var(--teal);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    font: 800 0.8125em/1 var(--font-display);
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  .keycap-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+  }
+
+  @keyframes keycap-tap {
+    0%,
+    100% {
+      transform: translateY(0);
+      box-shadow: 0 0.16em 0 var(--depth);
+    }
+    45% {
+      transform: translateY(0.12em);
+      box-shadow: 0 0.04em 0 var(--depth);
+      background-color: var(--primary-fill);
+    }
+  }
+
+  .hint {
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .segmented {
+    display: flex;
+    gap: 3px;
+    padding: 3px;
+    background: var(--surface-sunken);
+    border: 2px solid var(--line);
+    border-radius: var(--radius-m);
+
+    & button {
+      flex: 1 1 0;
+      min-width: 0;
+      min-height: 30px;
+      padding: 0 var(--space-2);
+      font: 800 0.8125rem/1 var(--font-display);
+      color: var(--text-muted);
+      background: var(--surface-2);
+      border-radius: var(--radius-s);
+      white-space: nowrap;
+      transition:
+        background-color var(--dur-hover) var(--ease-sym),
+        color var(--dur-hover) var(--ease-sym),
+        transform var(--dur-hover) var(--ease-spring);
+
+      &:hover:not([aria-pressed='true'], :disabled) {
+        color: var(--text);
+        background: var(--surface-3);
+      }
+
+      &:active:not(:disabled) {
+        transform: translateY(1px) scale(0.97);
+      }
+
+      &[aria-pressed='true'] {
+        color: var(--on-primary);
+        background: var(--primary);
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
+    }
+  }
+
+  .field {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .field-label {
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  :is(.number-input, .text-input, .select-input) {
+    width: 100%;
+    min-height: 36px;
+    padding: 0 var(--space-2);
+    color: var(--text);
+    background: var(--surface-sunken);
+    border: 2px solid var(--line);
+    border-radius: var(--radius-s);
+    transition: border-color var(--dur-hover) var(--ease-sym);
+
+    &:hover:not(:disabled, :focus-visible) {
+      border-color: var(--line-strong);
+    }
+
+    &:focus-visible {
+      border-color: var(--focus);
+      outline-offset: 1px;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    &[aria-invalid='true'] {
+      border-color: var(--danger);
+    }
+  }
+
+  .number-input {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .range-input {
+    width: 100%;
+    accent-color: var(--primary);
+    cursor: pointer;
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+
+  .dialog {
+    margin: auto;
+    width: min(480px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
+    background: var(--surface-1);
+    border: 2px solid var(--line-strong);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 8px 0 var(--depth);
+    overflow: visible;
+
+    &[open] {
+      animation: dialog-in var(--dur-modal) var(--ease-spring);
+    }
+
+    &::backdrop {
+      background: var(--overlay);
+      animation: fade-in var(--dur-modal) var(--ease-out);
+    }
+  }
+
+  .dialog-body {
+    display: grid;
+    gap: var(--space-4);
+    padding: var(--space-5);
+  }
+
+  .dialog-title {
+    font-size: 1.375rem;
+  }
+
+  .dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    padding-top: var(--space-2);
+  }
+
+  /* The one floating label of the `tooltip` action, positioned in JS by `translate`. */
+  .tooltip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    max-width: min(320px, calc(100vw - 16px));
+    padding: 6px 10px;
+    color: var(--text);
+    background: var(--surface-3);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-m);
+    box-shadow: 0 4px 0 var(--depth);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.3;
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    scale: 0.92;
+    transform-origin: center bottom;
+    transition:
+      opacity var(--dur-instant) var(--ease-in),
+      scale var(--dur-instant) var(--ease-in),
+      visibility 0s linear var(--dur-instant);
+
+    &[data-side='bottom'] {
+      transform-origin: center top;
+    }
+
+    &.is-visible {
+      visibility: visible;
+      opacity: 1;
+      scale: 1;
+      transition:
+        opacity var(--dur-pop) var(--ease-out),
+        scale var(--dur-pop) var(--ease-spring),
+        visibility 0s;
+    }
+  }
+
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.94);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+@layer utilities {
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+}
