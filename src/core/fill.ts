@@ -204,8 +204,8 @@ function cropBytes(src: Uint8ClampedArray, srcW: number, x: number, y: number, w
 export interface SourceLayer { image: RasterImage; x: number; y: number; opacity: number; visible: boolean; generator?: unknown }
 
 /**
- * The visible layers at stage size without the generated layers: the pixels that the clone stamp copies and the bucket
- * floods. Otherwise a vignette would darken a cloned area two times and break a flat color area under it.
+ * The visible layers at stage size without the generated layers: the pixels that the clone stamp copies. Otherwise a
+ * vignette would darken a cloned area two times.
  */
 export function paintSource(width: number, height: number, layers: readonly SourceLayer[]): RasterImage {
   const flat = layers.filter((layer) => layer.visible && layer.opacity > 0 && !layer.generator).map((layer) => ({ image: layer.image, x: layer.x, y: layer.y, opacity: layer.opacity }));

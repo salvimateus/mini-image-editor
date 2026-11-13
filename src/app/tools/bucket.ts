@@ -1,6 +1,7 @@
 import { toCss } from '../../core/color.ts';
-import { fillMask, floodMask, paintSource } from '../../core/fill.ts';
+import { fillMask, floodMask } from '../../core/fill.ts';
 import { coverage } from '../../core/mask.ts';
+import { cropRaster } from '../../core/raster.ts';
 import { STAGE_COLORS, type StagePointer } from '../../ui/stage-renderer.ts';
 import { t } from '../i18n/index.ts';
 import * as sfx from '../sfx.ts';
@@ -26,7 +27,9 @@ function burst(p: StagePointer): void {
   stage.invalidateFx();
 }
 
-/** Floods the visible layers (no generated layers) at the click and fills that region of the paint target with the foreground color. */
+const NOTHING_TO_FILL = Symbol('nothing-to-fill');
+
+/** Floods the raw pixels of the paint target at the click (outside its image = transparent) and fills that region with the foreground color. */
 function fillAt(p: StagePointer): void {
   const doc = app.doc;
   if (!doc) return;
@@ -46,14 +49,21 @@ function fillAt(p: StagePointer): void {
     app.refuse(t('paint.toast.hiddenLayer'));
     return;
   }
-  const mask = floodMask(paintSource(doc.width, doc.height, doc.layers), x, y, { tolerance: app.bucket.tolerance, contiguous: app.bucket.contiguous, antiAlias: true });
-  const layer = doc.paintTarget();
-  const patch = fillMask(layer.image, mask, app.fg, 1, selection, { x: layer.x, y: layer.y });
-  if (!patch) {
+  try {
+    doc.batch('paint.history.fill', () => {
+      const layer = doc.paintTarget();
+      const source = cropRaster(layer.image, { x: -layer.x, y: -layer.y, w: doc.width, h: doc.height });
+      const mask = floodMask(source, x, y, { tolerance: app.bucket.tolerance, contiguous: app.bucket.contiguous, antiAlias: true });
+      const patch = fillMask(layer.image, mask, app.fg, 1, selection, { x: layer.x, y: layer.y });
+      // The throw makes the batch undo a layer that paintTarget added for this fill.
+      if (!patch) throw NOTHING_TO_FILL;
+      doc.commitPatch(layer.id, patch, 'paint.history.fill');
+    });
+  } catch (error) {
+    if (error !== NOTHING_TO_FILL) throw error;
     app.refuse(t('paint.toast.nothingToFill'));
     return;
   }
-  doc.commitPatch(layer.id, patch, 'paint.history.fill');
   app.remember(app.fg);
   sfx.play('fill');
   burst(p);

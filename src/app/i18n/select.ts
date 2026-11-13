@@ -81,6 +81,7 @@ export const ptBR = {
   'select.toast.shapeHandles': 'Use as alças da forma para mudar o tamanho dela.',
   'select.toast.emptyLayer': 'Esta camada está vazia.',
   'select.toast.noLayer': 'Não há camada ativa.',
+  'select.toast.wandHidden': 'A camada ativa está oculta. Mostre a camada para selecionar nela.',
 
   'select.history.all': 'Selecionar tudo',
   'select.history.none': 'Desmarcar seleção',
@@ -176,6 +177,7 @@ export const en: Record<keyof typeof ptBR, string> = {
   'select.toast.shapeHandles': 'Use the handles of the shape to change its size.',
   'select.toast.emptyLayer': 'This layer is empty.',
   'select.toast.noLayer': 'There is no active layer.',
+  'select.toast.wandHidden': 'The active layer is hidden. Show the layer to select in it.',
 
   'select.history.all': 'Select all',
   'select.history.none': 'Deselect',
