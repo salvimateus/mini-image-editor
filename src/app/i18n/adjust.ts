@@ -80,7 +80,7 @@ export const ptBR = {
 
   'adjust.frame.width': 'Largura',
   'adjust.frame.color': 'Cor',
-  'adjust.frame.grow': 'Aumentar o palco',
+  'adjust.frame.grow': 'Aumentar a tela',
   'adjust.frame.growHint': 'A imagem passa de {from} para {to} px, e a moldura não cobre a foto.',
   'adjust.frame.coverHint': 'A imagem fica com {from} px, e a moldura cobre as bordas.',
   'adjust.frame.editing': 'Edita a camada “{name}”',

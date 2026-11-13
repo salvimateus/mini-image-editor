@@ -88,7 +88,7 @@ export const ptBR = {
   'select.toast.lastLayer': 'A imagem precisa de pelo menos uma camada.',
   'select.toast.noBelow': 'Não há camada abaixo para mesclar.',
   'select.toast.mergeHidden': 'Mostre as duas camadas antes de mesclar.',
-  'select.toast.generated': 'Esta camada se ajusta sozinha ao palco, então não dá para redimensioná-la.',
+  'select.toast.generated': 'Esta camada se ajusta sozinha à tela, então não dá para redimensioná-la.',
   'select.toast.shapeHandles': 'Use as alças da forma para mudar o tamanho dela.',
   'select.toast.emptyLayer': 'Esta camada está vazia.',
   'select.toast.noLayer': 'Não há camada ativa.',

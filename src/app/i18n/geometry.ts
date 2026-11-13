@@ -35,10 +35,10 @@ export const ptBR = {
   'geometry.hint.cropApply': 'Aplicar o corte',
   'geometry.hint.cropCancel': 'Cancelar o corte',
 
-  'geometry.canvas.title': 'Tamanho do palco',
+  'geometry.canvas.title': 'Tamanho da tela',
   'geometry.canvas.relative': 'Relativo',
   'geometry.canvas.relativeHint': 'Os valores somam ao tamanho atual. Use números negativos para diminuir.',
-  'geometry.canvas.result': 'O palco vai ficar com {w} × {h} px. A imagem não muda de escala.',
+  'geometry.canvas.result': 'A tela vai ficar com {w} × {h} px. A imagem não muda de escala.',
 
   'geometry.anchor.label': 'Posição da imagem',
   'geometry.anchor.nw': 'Em cima, à esquerda',
@@ -91,7 +91,7 @@ export const ptBR = {
   'geometry.guides.none': 'Não há guias para remover.',
 
   'geometry.history.crop': 'Cortar',
-  'geometry.history.canvasSize': 'Tamanho do palco',
+  'geometry.history.canvasSize': 'Tamanho da tela',
   'geometry.history.imageSize': 'Tamanho da imagem',
   'geometry.history.guideAdd': 'Nova guia',
   'geometry.history.guideMove': 'Mover guia',

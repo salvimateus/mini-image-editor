@@ -25,7 +25,7 @@ export const ptBR = {
   'action.file.close': 'Fechar imagem',
   'action.edit.undo': 'Desfazer',
   'action.edit.redo': 'Refazer',
-  'action.image.canvasSize': 'Tamanho do palco…',
+  'action.image.canvasSize': 'Tamanho da tela…',
   'action.image.imageSize': 'Tamanho da imagem…',
   'action.adjust.hueSaturation': 'Matiz/Saturação',
   'action.adjust.levels': 'Níveis',
@@ -137,7 +137,7 @@ export const ptBR = {
   'chrome.nothingUndo': 'Não há nada para desfazer.',
   'chrome.nothingRedo': 'Não há nada para refazer.',
   'chrome.layerAdded': 'A imagem {name} virou uma nova camada.',
-  'chrome.layerFitted': 'A imagem {name} era maior que o palco e foi reduzida para caber.',
+  'chrome.layerFitted': 'A imagem {name} era maior que a tela e foi reduzida para caber.',
   'chrome.bigImage': 'Imagem grande ({mp} megapixels): algumas ações podem ficar lentas.',
 
   'newImage.title': 'Nova imagem',
