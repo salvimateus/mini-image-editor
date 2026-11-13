@@ -1,11 +1,11 @@
-import { app, type BrushToolId } from '../../app/state.svelte.ts';
+import { app, brushShape, type BrushToolId } from '../../app/state.svelte.ts';
 import { TUNING } from '../../app/tuning/index.ts';
 import { PARAMS } from '../../core/params/index.ts';
 import type { Point } from '../../core/types.ts';
-import { STAGE_COLORS, type StageHost } from '../stage-renderer.ts';
+import { snap, STAGE_COLORS, type StageHost } from '../stage-renderer.ts';
 import type { SceneOverlay } from './types.ts';
 
-const BRUSH_TOOLS: ReadonlySet<string> = new Set<BrushToolId>(['brush', 'pencil', 'eraser', 'clone']);
+const BRUSH_TOOLS: ReadonlySet<string> = new Set<BrushToolId>(['brush', 'pencil', 'eraser', 'clone', 'sketch']);
 const LABEL_FONT = "800 12px 'Nunito Variable', 'Nunito', system-ui, sans-serif";
 
 /** The pointer in document px, or null when it is off the stage. */
@@ -120,20 +120,21 @@ function draw(fx: CanvasRenderingContext2D, host: StageHost, now: number): boole
     if (radius < cursor.minRingPx) {
       contrastStroke(fx, () => cross(fx, at.x, at.y, cursor.crossPx));
     } else {
-      contrastStroke(fx, () => {
+      const square = brushShape(tool) === 'square';
+      const outline = (r: number) => {
         fx.beginPath();
-        fx.arc(at.x, at.y, radius, 0, Math.PI * 2);
-      });
+        if (!square) {
+          fx.arc(at.x, at.y, r, 0, Math.PI * 2);
+          return;
+        }
+        const x0 = snap(at.x - r, host.dpr);
+        const y0 = snap(at.y - r, host.dpr);
+        fx.rect(x0, y0, snap(at.x + r, host.dpr) - x0, snap(at.y + r, host.dpr) - y0);
+      };
+      contrastStroke(fx, () => outline(radius));
       const inner = radius * settings.hardness;
       if (tool !== 'pencil' && settings.hardness < 0.95 && inner > 4) {
-        contrastStroke(
-          fx,
-          () => {
-            fx.beginPath();
-            fx.arc(at.x, at.y, inner, 0, Math.PI * 2);
-          },
-          [3, 4],
-        );
+        contrastStroke(fx, () => outline(inner), [3, 4]);
       }
       if (radius > cursor.crossPx * 3) contrastStroke(fx, () => cross(fx, at.x, at.y, 2));
     }

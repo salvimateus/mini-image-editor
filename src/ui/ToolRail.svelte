@@ -9,6 +9,7 @@
   import Lasso from '@lucide/svelte/icons/lasso';
   import Move from '@lucide/svelte/icons/move';
   import PaintBucket from '@lucide/svelte/icons/paint-bucket';
+  import Pen from '@lucide/svelte/icons/pen';
   import Pencil from '@lucide/svelte/icons/pencil';
   import Pipette from '@lucide/svelte/icons/pipette';
   import SquareDashed from '@lucide/svelte/icons/square-dashed';
@@ -33,7 +34,8 @@
     crop: { icon: Crop, label: 'chrome.tool.crop', action: 'tool.crop' },
     eyedropper: { icon: Pipette, label: 'chrome.tool.eyedropper', action: 'tool.eyedropper' },
     brush: { icon: Brush, label: 'chrome.tool.brush', action: 'tool.brush' },
-    pencil: { icon: Pencil, label: 'chrome.tool.pencil', action: 'tool.pencil' },
+    pencil: { icon: Pen, label: 'chrome.tool.pencil', action: 'tool.pencil' },
+    sketch: { icon: Pencil, label: 'chrome.tool.sketch', action: 'tool.sketch' },
     eraser: { icon: Eraser, label: 'chrome.tool.eraser', action: 'tool.eraser' },
     bucket: { icon: PaintBucket, label: 'chrome.tool.bucket', action: 'tool.bucket' },
     clone: { icon: Stamp, label: 'chrome.tool.clone', action: 'tool.clone' },
@@ -48,7 +50,7 @@
     ['move'],
     ['marquee-rect', 'marquee-ellipse', 'lasso', 'wand'],
     ['crop'],
-    ['brush', 'pencil', 'eraser', 'bucket', 'clone'],
+    ['brush', 'pencil', 'sketch', 'eraser', 'bucket', 'clone'],
     ['shape', 'step'],
     ['eyedropper'],
     ['text'],

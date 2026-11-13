@@ -101,12 +101,15 @@
     {#key app.tool}
       {#each hints as hint, index (index)}
         <li class="hint-item" class:is-permanent={index >= ownCount} style:--i={index}>
-          <span class="combo">
-            {#each parts(hint.keys) as part, partIndex (partIndex)}
-              {#if partIndex > 0}<span class="plus" aria-hidden="true">+</span>{/if}
-              <Keys keys={part} hint />
-            {/each}
-          </span>
+          <!-- A hint with no keys is plain text. -->
+          {#if hint.keys}
+            <span class="combo">
+              {#each parts(hint.keys) as part, partIndex (partIndex)}
+                {#if partIndex > 0}<span class="plus" aria-hidden="true">+</span>{/if}
+                <Keys keys={part} hint />
+              {/each}
+            </span>
+          {/if}
           <span class="hint-text">{t(hint.text)}</span>
         </li>
       {/each}

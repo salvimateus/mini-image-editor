@@ -4,7 +4,7 @@
   import WifiOff from '@lucide/svelte/icons/wifi-off';
   import { BUNDLED_FAMILY, familyStack } from '../../app/fonts/fonts.ts';
   import { textSession } from '../../app/fonts/text-session.svelte.ts';
-  import { locale, parseDecimal, t } from '../../app/i18n/index.ts';
+  import { getLocale, parseDecimal, t } from '../../app/i18n/index.ts';
   import * as sfx from '../../app/sfx.ts';
   import { TUNING } from '../../app/tuning/index.ts';
   import ColorField from '../panels/ColorField.svelte';
@@ -15,7 +15,7 @@
   const R = TUNING.text.ranges.size;
   /** WebKitGTK before 2.42 has no popover: the picker then opens as a fixed box with the same placement. */
   const nativePopover = typeof HTMLElement !== 'undefined' && 'popover' in HTMLElement.prototype;
-  const format = new Intl.NumberFormat(locale, { maximumFractionDigits: 1, useGrouping: false });
+  const format = $derived(new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 1, useGrouping: false }));
 
   let button = $state<HTMLButtonElement | null>(null);
   let pop = $state<HTMLDivElement | null>(null);

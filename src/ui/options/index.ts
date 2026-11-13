@@ -7,6 +7,7 @@ import MoveOptions from './MoveOptions.svelte';
 import PaintOptions from './PaintOptions.svelte';
 import SelectOptions from './SelectOptions.svelte';
 import ShapeOptions from './ShapeOptions.svelte';
+import SketchOptions from './SketchOptions.svelte';
 import StepOptions from './StepOptions.svelte';
 import TextOptions from './TextOptions.svelte';
 
@@ -21,6 +22,7 @@ export const TOOL_OPTIONS: Record<ToolId, Component | null> = {
   eyedropper: null,
   brush: PaintOptions,
   pencil: PaintOptions,
+  sketch: SketchOptions,
   eraser: PaintOptions,
   bucket: BucketOptions,
   clone: CloneOptions,

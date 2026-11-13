@@ -14,11 +14,8 @@
   const D = TUNING.shapes.defaults.step;
 
   const settings = $derived(shapeSettings.value.step);
-  /** The active step that these options edit, or null: they then set the next step. */
-  const spec = $derived.by(() => {
-    const value = shapeSettings.activeFor('step')?.spec;
-    return value?.kind === 'step' ? value : null;
-  });
+  /** The step whose style these options show; an edit goes to every step. Null = no step: they show the settings. */
+  const spec = $derived(shapeSettings.referenceStep());
   const size = $derived(spec?.size ?? settings.size);
   const fill = $derived(spec?.fill ?? settings.fill);
   const textColor = $derived(spec?.textColor ?? settings.textColor);

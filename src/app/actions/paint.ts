@@ -6,7 +6,7 @@ import { app, type BrushToolId } from '../state.svelte.ts';
 import { TUNING } from '../tuning/index.ts';
 import type { ActionHandlers, PaintActionId } from './types.ts';
 
-const BRUSH_TOOLS: ReadonlySet<string> = new Set<BrushToolId>(['brush', 'pencil', 'eraser', 'clone']);
+const BRUSH_TOOLS: ReadonlySet<string> = new Set<BrushToolId>(['brush', 'pencil', 'eraser', 'clone', 'sketch']);
 
 function activeBrush(): BrushToolId | null {
   if (BRUSH_TOOLS.has(app.tool)) return app.tool as BrushToolId;
@@ -35,8 +35,8 @@ function changeSize(direction: 1 | -1): void {
 function changeHardness(direction: 1 | -1): void {
   const tool = activeBrush();
   if (!tool) return;
-  if (tool === 'pencil') {
-    app.refuse(t('paint.toast.pencilHard'));
+  if (tool === 'pencil' || tool === 'sketch') {
+    app.refuse(t(tool === 'pencil' ? 'paint.toast.pencilHard' : 'paint.toast.sketchHard'));
     return;
   }
   const step = TUNING.paint.hardnessStep;

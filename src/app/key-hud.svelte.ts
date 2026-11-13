@@ -1,10 +1,10 @@
-import { t } from './i18n/index.ts';
+import type { TextKey } from './i18n/index.ts';
 import { eventKeyLabel, keyLabels, shortcutOf, type ActionId } from './shortcuts.ts';
 import { TUNING } from './tuning/index.ts';
 
 export type HudMode = 'press' | 'hint';
 
-export interface HudItem { serial: number; id: ActionId; keys: readonly string[]; label: string; mode: HudMode }
+export interface HudItem { serial: number; id: ActionId; keys: readonly string[]; label: TextKey; mode: HudMode }
 
 /** The keys held now and the last combo, for the KeyHud and for each visible keycap. */
 class KeyHudState {
@@ -21,7 +21,7 @@ class KeyHudState {
     const keys = keyLabels(id);
     if (keys.length === 0) return;
     this.serial += 1;
-    this.item = { serial: this.serial, id, keys, label: t(shortcutOf(id).label), mode };
+    this.item = { serial: this.serial, id, keys, label: shortcutOf(id).label, mode };
     clearTimeout(this.timer);
     const ms = mode === 'hint' ? TUNING.ui.keyHud.hintMs : TUNING.ui.keyHud.pressMs;
     const serial = this.serial;

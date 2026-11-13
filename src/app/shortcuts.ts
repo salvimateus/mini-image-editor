@@ -54,7 +54,8 @@ export type ActionId =
   | 'color.swap'
   | 'color.reset'
   | 'help.shortcuts'
-  | 'help.resetSettings';
+  | 'help.resetSettings'
+  | 'help.about';
 
 export type ActionSource = 'key' | 'pointer';
 
@@ -91,6 +92,7 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   { id: 'tool.eyedropper', combos: [key('i')], label: 'chrome.tool.eyedropper', group: 'tools' },
   { id: 'tool.brush', combos: [key('b')], label: 'chrome.tool.brush', group: 'tools' },
   { id: 'tool.pencil', combos: [key('p')], label: 'chrome.tool.pencil', group: 'tools' },
+  { id: 'tool.sketch', combos: [key('y')], label: 'chrome.tool.sketch', group: 'tools' },
   { id: 'tool.eraser', combos: [key('e')], label: 'chrome.tool.eraser', group: 'tools' },
   { id: 'tool.bucket', combos: [key('g')], label: 'chrome.tool.bucket', group: 'tools' },
   { id: 'tool.clone', combos: [key('s')], label: 'chrome.tool.clone', group: 'tools' },
@@ -150,6 +152,7 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   { id: 'guides.clear', combos: [], label: 'action.guides.clear', group: 'view' },
   { id: 'help.shortcuts', combos: [key('F1')], label: 'action.help.shortcuts', group: 'view', whileTyping: true },
   { id: 'help.resetSettings', combos: [], label: 'action.help.resetSettings', group: 'view' },
+  { id: 'help.about', combos: [], label: 'action.help.about', group: 'view' },
 ];
 
 export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = ['file', 'edit', 'tools', 'image', 'adjust', 'select', 'layer', 'view'];
@@ -190,8 +193,8 @@ export function matchShortcut(e: KeyboardEvent): ShortcutDef | null {
   return null;
 }
 
+/** Only names that are the same in each language: the UI language can change at runtime. */
 const KEY_NAMES: Record<string, string> = {
-  ' ': t('key.space'),
   Delete: 'Delete',
   Backspace: 'Backspace',
   Escape: 'Esc',
@@ -203,6 +206,7 @@ const KEY_NAMES: Record<string, string> = {
 
 /** The keycap text of one key value ('z' → 'Z', 'Escape' → 'Esc'). */
 export function keyName(value: string): string {
+  if (value === ' ') return t('key.space');
   if (value in KEY_NAMES) return KEY_NAMES[value];
   return value.length === 1 ? value.toUpperCase() : value;
 }

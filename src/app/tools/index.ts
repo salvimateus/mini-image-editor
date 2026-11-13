@@ -11,6 +11,7 @@ import { marqueeRectTool } from './marquee-rect.ts';
 import { moveTool } from './move.ts';
 import { pencilTool } from './pencil.ts';
 import { shapeTool } from './shape.ts';
+import { sketchTool } from './sketch.ts';
 import { stepTool } from './step.ts';
 import { textTool } from './text.ts';
 import type { ToolController, ToolId } from './types.ts';
@@ -30,6 +31,7 @@ export const TOOLS: Record<ToolId, ToolController> = {
   eyedropper: eyedropperTool,
   brush: brushTool,
   pencil: pencilTool,
+  sketch: sketchTool,
   eraser: eraserTool,
   bucket: bucketTool,
   clone: cloneTool,

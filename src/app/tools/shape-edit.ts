@@ -7,6 +7,7 @@ import * as sfx from '../sfx.ts';
 import { clearSnapFeedback, snapBoxLive, snapValueLive } from '../snap-feedback.svelte.ts';
 import { app } from '../state.svelte.ts';
 import { TUNING } from '../tuning/index.ts';
+import { restyleSteps } from './shape-settings.svelte.ts';
 
 // The shared part of the Shapes and Steps tools and the shape handles: hit tests, the body drag, the handle drags and
 // the live sprite of a shape that is not in the document yet.
@@ -366,7 +367,20 @@ function pushTarget(drag: HandleDrag): void {
   if (!target || app.doc !== drag.doc || !drag.doc.layer(drag.id)) return;
   try {
     const image = renderShapeLayer(target.spec);
-    drag.doc.setShapeSpec(drag.id, target.spec, image, drag.key, target.at);
+    const spec = target.spec;
+    if (spec.kind === 'step') {
+      // All the steps share one size: the other steps follow, in the same undo step.
+      drag.doc.batch(
+        'history.shapeEdit',
+        () => {
+          drag.doc.setShapeSpec(drag.id, spec, image, undefined, target.at);
+          restyleSteps(drag.doc, (other) => ({ ...other, size: spec.size }), drag.id);
+        },
+        drag.key,
+      );
+    } else {
+      drag.doc.setShapeSpec(drag.id, spec, image, drag.key, target.at);
+    }
     drag.pushed = true;
     drag.lastPush = performance.now();
   } catch (error) {
@@ -380,7 +394,9 @@ function keepAlive(drag: HandleDrag): void {
   if (performance.now() - drag.lastPush < TUNING.shapes.keepAliveMs) return;
   const layer = drag.doc.layer(drag.id);
   if (!layer || layer.kind !== 'shape' || app.doc !== drag.doc) return;
-  drag.doc.setShapeSpec(drag.id, layer.spec, layer.image, drag.key);
+  // A step drag records batches, so the keep-alive entry must have the same batch key to merge.
+  if (layer.spec.kind === 'step') drag.doc.batch('history.shapeEdit', () => drag.doc.setShapeSpec(drag.id, layer.spec, layer.image), drag.key);
+  else drag.doc.setShapeSpec(drag.id, layer.spec, layer.image, drag.key);
   drag.lastPush = performance.now();
 }
 

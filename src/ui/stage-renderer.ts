@@ -29,11 +29,21 @@ export interface Scene {
   drawFx(fx: CanvasRenderingContext2D, now: number): boolean;
 }
 
+/** One coalesced document point of a pointer event, with its pressure 0..1. */
+export interface StageSample extends Point {
+  pressure: number;
+}
+
 /**
  * One pointer sample on the stage. sx, sy in stage CSS px; ix, iy in document px; samples = the coalesced document
- * points of this event, the last one equal to ix, iy.
+ * points of this event, the last one equal to ix, iy. A mouse or a touch gives a fixed pressure
+ * (`TUNING.paint.mousePressure`); only a pen gives a real one.
  */
 export interface StagePointer {
+  /** 0..1. */
+  pressure: number;
+  /** The pointer is a pen (a tablet stylus). */
+  pen: boolean;
   sx: number;
   sy: number;
   ix: number;
@@ -44,7 +54,7 @@ export interface StagePointer {
   ctrl: boolean;
   /** PointerEvent.button of the press: 0 primary, 1 middle, 2 right. */
   button: number;
-  samples: readonly Point[];
+  samples: readonly StageSample[];
 }
 
 /** The stage as the rest of the app sees it (app.stage). */

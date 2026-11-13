@@ -24,7 +24,7 @@ const HANDLERS: Record<ActionId, ActionHandler> = {
 };
 
 /** The actions that work with no open document. Every other handler can count on `app.doc`. */
-const WITHOUT_DOC = new Set<ActionId>(['file.open', 'file.new', 'view.hud', 'view.mute', 'help.shortcuts', 'help.resetSettings']);
+const WITHOUT_DOC = new Set<ActionId>(['file.open', 'file.new', 'view.hud', 'view.mute', 'help.shortcuts', 'help.resetSettings', 'help.about']);
 
 /** False when the action can do nothing now: the menus and buttons show it as disabled. */
 export function actionEnabled(id: ActionId): boolean {

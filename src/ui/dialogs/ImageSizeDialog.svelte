@@ -6,7 +6,7 @@
   import { stageSizeProblem } from '../../app/actions/geometry.ts';
   import type { EditorDoc } from '../../app/doc.svelte.ts';
   import { prepareGenerators } from '../../app/generators.ts';
-  import { formatBytes, locale, parseDecimal, t, type TextKey } from '../../app/i18n/index.ts';
+  import { formatBytes, getLocale, parseDecimal, t, type TextKey } from '../../app/i18n/index.ts';
   import { lastResample, saveResample } from '../../app/last-used.ts';
   import * as sfx from '../../app/sfx.ts';
   import { app } from '../../app/state.svelte.ts';
@@ -28,7 +28,7 @@
   const PRESETS: readonly number[] = [0, 512, 1024, 1080, 1920, 2048, 4096];
   const LABEL = 'geometry.history.imageSize' satisfies TextKey;
 
-  const amount = new Intl.NumberFormat(locale, { maximumFractionDigits: 2, useGrouping: false });
+  const amount = $derived(new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 2, useGrouping: false }));
 
   const open = $derived(app.dialog === 'image-size');
   let unit = $state<Unit>('px');

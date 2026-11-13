@@ -1,5 +1,6 @@
 import type { ToolId } from '../tools/types.ts';
 import { t } from '../i18n/index.ts';
+import { DEFAULT_LANGUAGE, setLanguage } from '../i18n/language.svelte.ts';
 import { resetPrefs } from '../prefs.ts';
 import { app } from '../state.svelte.ts';
 import * as sfx from '../sfx.ts';
@@ -34,6 +35,7 @@ async function resetSettings(): Promise<void> {
     return;
   }
   setTheme(DEFAULT_THEME);
+  setLanguage(DEFAULT_LANGUAGE);
   resetPrefs();
   sfx.play('apply');
   app.toast(t('chrome.resetSettings.done'), 'success');
@@ -60,6 +62,7 @@ export const coreActions: ActionHandlers<CoreActionId> = {
   'tool.eyedropper': tool('eyedropper'),
   'tool.brush': tool('brush'),
   'tool.pencil': tool('pencil'),
+  'tool.sketch': tool('sketch'),
   'tool.eraser': tool('eraser'),
   'tool.bucket': tool('bucket'),
   'tool.clone': tool('clone'),
@@ -90,4 +93,5 @@ export const coreActions: ActionHandlers<CoreActionId> = {
   'color.reset': () => app.resetColors(),
   'help.shortcuts': () => app.openDialog(app.dialog === 'shortcuts' ? 'none' : 'shortcuts'),
   'help.resetSettings': () => void resetSettings(),
+  'help.about': () => app.openDialog('about'),
 };

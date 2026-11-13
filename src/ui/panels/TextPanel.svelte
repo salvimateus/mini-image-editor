@@ -348,7 +348,7 @@
     <div class="text-group">
       <ToggleSwitch id="text-shadow" label={t('text.shadow')} checked={spec.shadow.on} onchange={(on) => textSession.update({ shadow: { on } })} />
       {#if spec.shadow.on}
-        <div class="text-row">
+        <div class="text-row text-offsets">
           <SliderField
             id="text-shadow-dx"
             label={t('text.shadow.dx')}
@@ -492,11 +492,19 @@
       gap: var(--space-3);
     }
 
+    /* Two offset sliders need room for a full label and the number field each. */
+    @container (width < 25rem) {
+      .text-offsets {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
     .text-italic {
       padding-bottom: 6px;
     }
 
     .text-group {
+      container-type: inline-size;
       display: grid;
       gap: var(--space-3);
       padding-top: var(--space-3);

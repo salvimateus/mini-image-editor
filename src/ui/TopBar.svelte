@@ -10,6 +10,7 @@
   import { t, type TextKey } from '../app/i18n/index.ts';
   import { keyLabels, type ActionId } from '../app/shortcuts.ts';
   import { tooltip } from './base/tooltip.ts';
+  import LanguagePicker from './LanguagePicker.svelte';
   import Menu from './Menu.svelte';
   import ThemePicker from './ThemePicker.svelte';
 
@@ -61,7 +62,7 @@
         'view.mute',
       ],
     },
-    { id: 'help', label: 'menu.help', items: ['help.shortcuts', null, 'help.resetSettings'] },
+    { id: 'help', label: 'menu.help', items: ['help.shortcuts', null, 'help.resetSettings', null, 'help.about'] },
   ];
 
   let openMenu = $state<string | null>(null);
@@ -138,6 +139,7 @@
     >
       {#if app.muted}<VolumeX size={20} />{:else}<Volume2 size={20} />{/if}
     </button>
+    <LanguagePicker inBar />
     <ThemePicker inBar />
     <button
       type="button"

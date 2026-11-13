@@ -159,12 +159,16 @@ export class EditorDoc {
     return this.quietly(() => this.history.redo());
   }
 
-  /** The changes inside `run` are one undo step. If `run` throws, its changes are undone and the error goes on. */
-  batch(label: TextKey, run: () => void): void {
+  /**
+   * The changes inside `run` are one undo step. If `run` throws, its changes are undone and the error goes on. With
+   * `coalesce`, two batches with the same key merge like two entries (a live drag that edits several layers).
+   */
+  batch(label: TextKey, run: () => void, coalesce?: string): void {
     if (this.batchParts) {
       run();
       return;
     }
+    const key = coalesce === undefined ? undefined : `batch:${coalesce}`;
     const parts: Recorded[] = [];
     this.batchParts = parts;
     try {
@@ -179,7 +183,7 @@ export class EditorDoc {
     this.batchParts = null;
     if (!parts.length) return;
     if (parts.length === 1) {
-      this.history.push({ ...parts[0], label });
+      this.history.push(key === undefined ? { ...parts[0], label } : { ...parts[0], label, coalesce: key });
       return;
     }
     let bytes = 0;
@@ -187,6 +191,7 @@ export class EditorDoc {
     this.history.push({
       label,
       bytes,
+      coalesce: key,
       neutral: parts.every((part) => part.neutral),
       undo: () => {
         for (let i = parts.length - 1; i >= 0; i--) parts[i].undo();

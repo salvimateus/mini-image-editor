@@ -1,3 +1,5 @@
+import { TIP_SHAPES, type TipShape } from '../core/brush-tip.ts';
+import { SKETCH_PRESET_IDS, type SketchPresetId } from '../core/params/paint.ts';
 import { CoreError, errorCode } from '../core/errors.ts';
 import { FORMAT_INFO } from '../core/formats.ts';
 import { PARAMS } from '../core/params/index.ts';
@@ -10,7 +12,7 @@ import { cleanBaseName } from './file-name.ts';
 import { t } from './i18n/index.ts';
 import { lastGrid } from './last-used.ts';
 import { createRasterLayer } from './layers.ts';
-import { colorField, onPrefsReset, readJson, readPrefs, savePrefs } from './prefs.ts';
+import { colorField, onPrefsReset, pickField, readJson, readPrefs, savePrefs } from './prefs.ts';
 import * as sfx from './sfx.ts';
 import { TOOLS } from './tools/index.ts';
 import type { ToolId } from './tools/types.ts';
@@ -38,17 +40,22 @@ export interface ConfirmRequest {
 }
 
 /** size in px; hardness and opacity 0..1. */
-export interface BrushSettings { size: number; hardness: number; opacity: number }
-export type BrushToolId = 'brush' | 'pencil' | 'eraser' | 'clone';
+export interface BrushSettings { size: number; hardness: number; opacity: number; shape: TipShape }
+export type BrushToolId = 'brush' | 'pencil' | 'eraser' | 'clone' | 'sketch';
+/** The pencil tool keeps one size for each preset; `size` is always the size of the active preset. */
+export interface SketchSettings extends BrushSettings { preset: SketchPresetId; sizes: Record<SketchPresetId, number> }
+export type BrushMap = Record<BrushToolId, BrushSettings> & { sketch: SketchSettings };
+/** The brush tools that offer the square tip; the others stay round. */
+export const SHAPED_BRUSHES: ReadonlySet<BrushToolId> = new Set<BrushToolId>(['brush', 'eraser']);
 export type PanelId = 'none' | 'hue-saturation' | 'levels' | 'sharpen' | 'vignette' | 'text' | 'frame';
-export type DialogId = 'none' | 'new-image' | 'canvas-size' | 'image-size' | 'export' | 'shortcuts';
+export type DialogId = 'none' | 'new-image' | 'canvas-size' | 'image-size' | 'export' | 'shortcuts' | 'about';
 export interface ViewFlags { rulers: boolean; guides: boolean; grid: boolean; snap: boolean; avatar: boolean; hud: boolean }
 export interface BucketSettings { tolerance: number; contiguous: boolean }
 export interface CropRequest { ratioW: number; ratioH: number; mode: 'crop' | 'expand' }
 /** upper: `bytes` is the size before optimization, and the optimized size is still in work. */
 export interface WeightState { bytes: number | null; pending: boolean; upper?: boolean }
 
-const BRUSH_TOOLS: readonly BrushToolId[] = ['brush', 'pencil', 'eraser', 'clone'];
+const BRUSH_TOOLS: readonly BrushToolId[] = ['brush', 'pencil', 'eraser', 'clone', 'sketch'];
 const BLACK: Rgba = { r: 0, g: 0, b: 0, a: 255 };
 const WHITE: Rgba = { r: 255, g: 255, b: 255, a: 255 };
 
@@ -69,18 +76,33 @@ function cleanBrush(value: Partial<BrushSettings>, base: BrushSettings): BrushSe
     size: Math.round(clamp(finite(value.size, base.size), min, max)),
     hardness: clamp(finite(value.hardness, base.hardness), 0, 1),
     opacity: clamp(finite(value.opacity, base.opacity), 0.01, 1),
+    shape: pickField(value.shape, TIP_SHAPES, base.shape),
   };
 }
 
-/** The stored brush settings, or the defaults when `stored` is null. */
-function loadBrushes(stored = readPrefs('brush', PREFS_VERSION)): Record<BrushToolId, BrushSettings> {
-  const out = {} as Record<BrushToolId, BrushSettings>;
-  for (const id of BRUSH_TOOLS) {
-    const base = TUNING.ui.brushDefaults[id];
+/** The tip shape that a stroke of `tool` uses. */
+export function brushShape(tool: BrushToolId): TipShape {
+  return SHAPED_BRUSHES.has(tool) ? app.brush[tool].shape : 'round';
+}
+
+function cleanSketch(value: Partial<SketchSettings>, base: SketchSettings): SketchSettings {
+  const { min, max } = TUNING.ui.brushSize;
+  const preset = pickField(value.preset, SKETCH_PRESET_IDS, base.preset);
+  const stored: Partial<Record<SketchPresetId, unknown>> = value.sizes && typeof value.sizes === 'object' ? value.sizes : {};
+  const sizes = {} as Record<SketchPresetId, number>;
+  for (const id of SKETCH_PRESET_IDS) sizes[id] = Math.round(clamp(finite(stored[id], base.sizes[id]), min, max));
+  return { ...cleanBrush(value, base), size: sizes[preset], preset, sizes };
+}
+
+/** The stored brush settings, or the defaults when `stored` is null. A tool with no stored entry gets its defaults. */
+function loadBrushes(stored = readPrefs('brush', PREFS_VERSION)): BrushMap {
+  const entryOf = (id: BrushToolId) => {
     const entry = stored?.[id];
-    out[id] = cleanBrush(entry && typeof entry === 'object' ? (entry as Partial<BrushSettings>) : {}, base);
-  }
-  return out;
+    return entry && typeof entry === 'object' ? entry : {};
+  };
+  const out = {} as Record<BrushToolId, BrushSettings>;
+  for (const id of BRUSH_TOOLS) out[id] = cleanBrush(entryOf(id) as Partial<BrushSettings>, TUNING.ui.brushDefaults[id]);
+  return { ...out, sketch: cleanSketch(entryOf('sketch') as Partial<SketchSettings>, TUNING.ui.brushDefaults.sketch) };
 }
 
 function cleanBucket(value: Partial<BucketSettings>, base: BucketSettings): BucketSettings {
@@ -174,7 +196,7 @@ class AppState {
   fg = $state.raw<Rgba>(BLACK);
   bg = $state.raw<Rgba>(WHITE);
   recentColors = $state.raw<readonly Rgba[]>([]);
-  brush = $state.raw<Record<BrushToolId, BrushSettings>>(loadBrushes());
+  brush = $state.raw<BrushMap>(loadBrushes());
   bucket = $state.raw<BucketSettings>(cleanBucket(readPrefs('bucket', PREFS_VERSION) ?? {}, TUNING.ui.bucketDefaults));
   view = $state.raw<ViewFlags>(loadView());
   panel = $state<PanelId>('none');
@@ -339,9 +361,20 @@ class AppState {
     this.saveColors();
   }
 
-  setBrush(tool: BrushToolId, patch: Partial<BrushSettings>): BrushSettings {
-    const next = cleanBrush({ ...this.brush[tool], ...patch }, this.brush[tool]);
-    this.brush = { ...this.brush, [tool]: next };
+  /** For the pencil tool, a size is the size of the preset, and a preset change brings back the size of that preset. */
+  setBrush(tool: BrushToolId, patch: Partial<SketchSettings>): BrushSettings {
+    let next: BrushSettings;
+    if (tool === 'sketch') {
+      const current = this.brush.sketch;
+      const preset = pickField(patch.preset, SKETCH_PRESET_IDS, current.preset);
+      const sizes = patch.size === undefined ? current.sizes : { ...current.sizes, [preset]: patch.size };
+      const sketch = cleanSketch({ ...current, ...patch, preset, sizes }, current);
+      this.brush = { ...this.brush, sketch };
+      next = sketch;
+    } else {
+      next = cleanBrush({ ...this.brush[tool], ...patch }, this.brush[tool]);
+      this.brush = { ...this.brush, [tool]: next };
+    }
     savePrefs('brush', PREFS_VERSION, this.brush);
     return next;
   }

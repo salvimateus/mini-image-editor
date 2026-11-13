@@ -106,6 +106,31 @@ function sameSpec(a: ShapeSpec, b: ShapeSpec): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+/** Renders the edited spec and puts it in the document; the spec origin (top-left, tail or center) stays in place. */
+function applyShape(doc: EditorDoc, layer: ShapeLayer, next: ShapeSpec, coalesce?: string): void {
+  if (sameSpec(layer.spec, next)) return;
+  try {
+    const image = renderShapeLayer(next);
+    const before = shapeOrigin(layer.spec);
+    const after = shapeOrigin(next);
+    const at: Point = { x: layer.x + before.x - after.x, y: layer.y + before.y - after.y };
+    doc.setShapeSpec(layer.id, next, image, coalesce, at);
+  } catch (error) {
+    app.fail(error);
+  }
+}
+
+/**
+ * Applies `edit` to each step layer of the document (hidden ones too), except `skipId`. Each step keeps its center.
+ * The caller wraps it in a batch, so that all the steps change in one undo step.
+ */
+export function restyleSteps(doc: EditorDoc, edit: (spec: StepSpec) => StepSpec, skipId?: number): void {
+  for (const layer of doc.layers) {
+    if (layer.kind !== 'shape' || layer.spec.kind !== 'step' || layer.id === skipId) continue;
+    applyShape(doc, layer, edit(layer.spec));
+  }
+}
+
 /** The settings of the Shapes and Steps tools, the number of the next step, and the live edit of the active shape. */
 class ShapeSettingsStore {
   value = $state.raw<ShapeSettings>(loadSettings());
@@ -133,26 +158,28 @@ class ShapeSettingsStore {
     return kind !== 'step' && sameFamily(kind, this.value.kind) ? layer : null;
   }
 
-  /** Renders the edited spec and puts it in the document; the spec origin (top-left, tail or center) stays in place. */
-  private applyTo(layer: ShapeLayer, next: ShapeSpec, coalesce?: string): void {
+  private editActive(tool: 'shape' | 'step', edit: (spec: ShapeSpec) => ShapeSpec | null, coalesce?: string): void {
     const doc = app.doc;
-    if (!doc || sameSpec(layer.spec, next)) return;
-    try {
-      const image = renderShapeLayer(next);
-      const before = shapeOrigin(layer.spec);
-      const after = shapeOrigin(next);
-      const at: Point = { x: layer.x + before.x - after.x, y: layer.y + before.y - after.y };
-      doc.setShapeSpec(layer.id, next, image, coalesce, at);
-    } catch (error) {
-      app.fail(error);
-    }
+    const layer = this.activeFor(tool);
+    if (!doc || !layer) return;
+    const next = edit(layer.spec);
+    if (next) applyShape(doc, layer, next, coalesce);
   }
 
-  private editActive(tool: 'shape' | 'step', edit: (spec: ShapeSpec) => ShapeSpec | null, coalesce?: string): void {
-    const layer = this.activeFor(tool);
-    if (!layer) return;
-    const next = edit(layer.spec);
-    if (next) this.applyTo(layer, next, coalesce);
+  /**
+   * The step whose style the Steps options show and a new step takes: the active layer when it is a step, else the
+   * step with the largest number. Null when the document has no step.
+   */
+  referenceStep(): StepSpec | null {
+    const doc = app.doc;
+    if (!doc) return null;
+    const active = doc.active;
+    if (active?.kind === 'shape' && active.spec.kind === 'step') return active.spec;
+    let best: StepSpec | null = null;
+    for (const layer of doc.layers) {
+      if (layer.kind === 'shape' && layer.spec.kind === 'step' && (!best || layer.spec.number >= best.number)) best = layer.spec;
+    }
+    return best;
   }
 
   // ----- Shapes options -----
@@ -205,24 +232,24 @@ class ShapeSettingsStore {
 
   // ----- Steps options -----
 
+  /** Sets the changed fields on the settings and on every step of the document, in one undo step. */
   setStep(change: Partial<Omit<StepSettings, 'stroke'>> & { stroke?: Partial<StrokeStyle> }, coalesce?: string): void {
     this.patch((s) => ({ ...s, step: { ...s.step, ...change, stroke: { ...s.step.stroke, ...change.stroke } } }));
+    const doc = app.doc;
+    if (!doc) return;
     const step = this.value.step;
-    this.editActive(
-      'step',
-      (spec) =>
-        spec.kind === 'step'
-          ? {
-              ...spec,
-              size: change.size !== undefined ? step.size : spec.size,
-              fill: change.fill ? { ...step.fill } : spec.fill,
-              textColor: change.textColor ? { ...step.textColor } : spec.textColor,
-              stroke: change.stroke ? { ...spec.stroke, ...change.stroke } : spec.stroke,
-              shadow: change.shadow !== undefined ? step.shadow : spec.shadow,
-            }
-          : null,
-      coalesce,
-    );
+    const stroke = change.stroke;
+    const edit = (spec: StepSpec): StepSpec => ({
+      ...spec,
+      size: change.size !== undefined ? step.size : spec.size,
+      fill: change.fill ? { ...step.fill } : spec.fill,
+      textColor: change.textColor ? { ...step.textColor } : spec.textColor,
+      stroke: stroke
+        ? { color: stroke.color ? { ...step.stroke.color } : spec.stroke.color, width: stroke.width !== undefined ? step.stroke.width : spec.stroke.width }
+        : spec.stroke,
+      shadow: change.shadow !== undefined ? step.shadow : spec.shadow,
+    });
+    doc.batch('history.shapeEdit', () => restyleSteps(doc, edit), coalesce === undefined ? undefined : `steps:${coalesce}`);
   }
 
   /** The largest step number in the document, or 0. */
@@ -275,7 +302,12 @@ class ShapeSettingsStore {
     return { kind: 'arrow', dx, dy, style, size: style === 'thin' ? a.thinSize : a.thickSize, fill: { ...a.color }, stroke: { color: { ...a.stroke.color }, width: a.stroke.width } };
   }
 
+  /** A new step with the style of the reference step, or of the settings when the document has no step. */
   stepSpec(number: number): StepSpec {
+    const ref = this.referenceStep();
+    if (ref) {
+      return { kind: 'step', number, size: ref.size, fill: { ...ref.fill }, textColor: { ...ref.textColor }, stroke: { color: { ...ref.stroke.color }, width: ref.stroke.width }, shadow: ref.shadow !== false };
+    }
     const s = this.value.step;
     return { kind: 'step', number, size: s.size, fill: { ...s.fill }, textColor: { ...s.textColor }, stroke: { color: { ...s.stroke.color }, width: s.stroke.width }, shadow: s.shadow };
   }

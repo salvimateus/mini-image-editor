@@ -10,7 +10,7 @@
   import ImageIcon from '@lucide/svelte/icons/image';
   import { untrack, type Component } from 'svelte';
   import { applyStageRect, stageFillColor, stageSizeProblem, type StageFill } from '../../app/actions/geometry.ts';
-  import { locale, parseDecimal, t, type TextKey } from '../../app/i18n/index.ts';
+  import { getLocale, parseDecimal, t, type TextKey } from '../../app/i18n/index.ts';
   import { lastCanvasFill, saveCanvasFill } from '../../app/last-used.ts';
   import * as sfx from '../../app/sfx.ts';
   import { app } from '../../app/state.svelte.ts';
@@ -52,7 +52,7 @@
   ];
   const PREVIEW = { w: 220, h: 120 };
 
-  const amount = new Intl.NumberFormat(locale, { maximumFractionDigits: 2, useGrouping: false });
+  const amount = $derived(new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 2, useGrouping: false }));
 
   const open = $derived(app.dialog === 'canvas-size');
   let unit = $state<Unit>('px');

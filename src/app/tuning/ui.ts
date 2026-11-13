@@ -15,6 +15,27 @@ export const UI_TUNING = {
   tooltip: { delayMs: 450, gapPx: 8, edgePx: 8 },
   dropBurstCount: 18,
   confettiCount: 56,
+  /**
+   * The About dialog: the logo pops in after `logoDelayMs` and lands `logoPopMs` later with a burst; the text lines
+   * follow, `staggerMs` apart. A press on the logo squashes it for `squashMs` with a smaller burst.
+   */
+  about: {
+    logoDelayMs: 120,
+    logoPopMs: 460,
+    lineRiseMs: 280,
+    lineStartMs: 300,
+    staggerMs: 70,
+    squashMs: 380,
+    landBurstCount: 16,
+    pressBurstCount: 10,
+    burstColors: ['var(--primary)', 'var(--primary-hover)', 'var(--stage-yellow)', 'var(--primary-edge)', 'var(--text)'],
+  },
+  /**
+   * The width of the right column that the user sets, in CSS px; `--panel-w` is the default. At the 960px minimum
+   * window, `max` leaves 424px for the stage. An arrow key moves the edge by `keyStepPx`, Shift+arrow by
+   * `keyStepBigPx`. A reset plays a pulse of `resetPulseMs` on the handle.
+   */
+  sideWidth: { min: 280, max: 480, keyStepPx: 16, keyStepBigPx: 64, resetPulseMs: 420 },
   /** The colors that the Color panel keeps, newest first. */
   recentColors: 12,
   /** The KeyHud shows a combo this long; a hint (a click that teaches the shortcut) stays longer. */
@@ -24,10 +45,19 @@ export const UI_TUNING = {
   /** Brush size limits, in document px, and the default settings of each brush tool. */
   brushSize: { min: 1, max: 1000 },
   brushDefaults: {
-    brush: { size: 24, hardness: 0.8, opacity: 1 },
-    pencil: { size: 1, hardness: 1, opacity: 1 },
-    eraser: { size: 32, hardness: 0.9, opacity: 1 },
-    clone: { size: 40, hardness: 0.6, opacity: 1 },
+    brush: { size: 24, hardness: 0.8, opacity: 1, shape: 'round' },
+    pencil: { size: 1, hardness: 1, opacity: 1, shape: 'round' },
+    eraser: { size: 32, hardness: 0.9, opacity: 1, shape: 'round' },
+    clone: { size: 40, hardness: 0.6, opacity: 1, shape: 'round' },
+    /** The pencil (`sketch`): the tip hardness comes from the preset; `sizes` is the start size of each preset. */
+    sketch: {
+      size: 4,
+      hardness: 1,
+      opacity: 1,
+      shape: 'round',
+      preset: '2b',
+      sizes: { '2b': 4, '6b': 7, charcoal: 20, colored: 5, chalk: 24, crayon: 12 },
+    },
   },
   bucketDefaults: { tolerance: 32, contiguous: true },
   viewDefaults: { rulers: false, guides: true, grid: false, snap: true, avatar: false, hud: true },

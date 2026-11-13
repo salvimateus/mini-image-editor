@@ -14,6 +14,8 @@ export const PAINT_TUNING = {
   flash: { showMs: 700, fadeMs: 300 },
   /** A paint sound plays at most once in this interval during a drag. */
   strokeSoundMs: 90,
+  /** The pressure of a mouse or a touch, which have none: a pressure tool then draws at a middle weight. */
+  mousePressure: 0.6,
   cursor: {
     /** Below this screen radius the outline is replaced by a small cross. */
     minRingPx: 3,

@@ -11,6 +11,7 @@
   import { keyLabels } from '../app/shortcuts.ts';
   import Burst from './base/Burst.svelte';
   import Keys from './base/Keys.svelte';
+  import LanguagePicker from './LanguagePicker.svelte';
   import ThemePicker from './ThemePicker.svelte';
   import { tooltip } from './base/tooltip.ts';
 
@@ -94,7 +95,7 @@
 <svelte:window onpaste={onPaste} />
 
 <section class="welcome" aria-labelledby="welcome-title" ondrop={onDrop}>
-  <div class="welcome-theme"><ThemePicker /></div>
+  <div class="welcome-theme"><LanguagePicker /><ThemePicker /></div>
 
   <div class="hero">
     <img class="logo" src={logoUrl} alt={t('app.logoAlt')} width="96" height="96" />
@@ -165,6 +166,8 @@
       top: var(--space-3);
       right: var(--space-3);
       z-index: 2;
+      display: flex;
+      gap: var(--space-1);
     }
 
     .hero {

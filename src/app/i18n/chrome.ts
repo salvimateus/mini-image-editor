@@ -9,6 +9,7 @@ export const ptBR = {
   'chrome.tool.eyedropper': 'Conta-gotas',
   'chrome.tool.brush': 'Pincel',
   'chrome.tool.pencil': 'Caneta',
+  'chrome.tool.sketch': 'Lápis',
   'chrome.tool.eraser': 'Borracha',
   'chrome.tool.bucket': 'Balde de tinta',
   'chrome.tool.clone': 'Carimbo',
@@ -70,6 +71,7 @@ export const ptBR = {
   'action.color.reset': 'Cores padrão (preto e branco)',
   'action.help.shortcuts': 'Atalhos do teclado',
   'action.help.resetSettings': 'Restaurar padrões',
+  'action.help.about': 'Sobre',
 
   'menu.file': 'Arquivo',
   'menu.edit': 'Editar',
@@ -100,6 +102,8 @@ export const ptBR = {
   'chrome.panel.close': 'Fechar painel',
   'chrome.panel.color': 'Cor',
   'chrome.panel.layers': 'Camadas',
+  'chrome.panel.width': 'Largura dos painéis',
+  'chrome.panel.widthTip': 'Largura dos painéis. Clique duas vezes para restaurar.',
   'chrome.hud': 'Último atalho',
 
   'chrome.status': 'Barra de status',
@@ -172,6 +176,11 @@ export const ptBR = {
   'shortcuts.pan': 'Mover a vista',
   'shortcuts.zoom': 'Zoom no ponteiro',
   'shortcuts.pick': 'Pegar uma cor com uma ferramenta de pintura',
+
+  'about.tagline': 'Um editor pequeno para edições rápidas: abra, edite, exporte e feche.',
+  'about.motivation': 'Feito para quem precisa de um ajuste rápido e não quer aprender um editor grande. Sua imagem nunca sai do seu computador.',
+  'about.license': 'Licença MIT',
+  'about.logoButton': 'Fazer o logo pular',
 } as const;
 
 export const en: Record<keyof typeof ptBR, string> = {
@@ -183,7 +192,8 @@ export const en: Record<keyof typeof ptBR, string> = {
   'chrome.tool.crop': 'Crop',
   'chrome.tool.eyedropper': 'Eyedropper',
   'chrome.tool.brush': 'Brush',
-  'chrome.tool.pencil': 'Pencil',
+  'chrome.tool.pencil': 'Pen',
+  'chrome.tool.sketch': 'Pencil',
   'chrome.tool.eraser': 'Eraser',
   'chrome.tool.bucket': 'Paint bucket',
   'chrome.tool.clone': 'Clone stamp',
@@ -245,6 +255,7 @@ export const en: Record<keyof typeof ptBR, string> = {
   'action.color.reset': 'Default colors (black and white)',
   'action.help.shortcuts': 'Keyboard shortcuts',
   'action.help.resetSettings': 'Restore defaults',
+  'action.help.about': 'About',
 
   'menu.file': 'File',
   'menu.edit': 'Edit',
@@ -275,6 +286,8 @@ export const en: Record<keyof typeof ptBR, string> = {
   'chrome.panel.close': 'Close panel',
   'chrome.panel.color': 'Color',
   'chrome.panel.layers': 'Layers',
+  'chrome.panel.width': 'Panel width',
+  'chrome.panel.widthTip': 'Panel width. Double-click to restore it.',
   'chrome.hud': 'Last shortcut',
 
   'chrome.status': 'Status bar',
@@ -347,4 +360,9 @@ export const en: Record<keyof typeof ptBR, string> = {
   'shortcuts.pan': 'Move the view',
   'shortcuts.zoom': 'Zoom at the pointer',
   'shortcuts.pick': 'Pick a color with a paint tool',
+
+  'about.tagline': 'A small editor for quick edits: open, edit, export, close.',
+  'about.motivation': 'Made for people who need a fast change and do not want to learn a large editor. Your image never leaves your computer.',
+  'about.license': 'MIT License',
+  'about.logoButton': 'Make the logo jump',
 };

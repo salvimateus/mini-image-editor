@@ -3,6 +3,7 @@
   import { runAction } from '../app/actions/index.ts';
   import { keyHud } from '../app/key-hud.svelte.ts';
   import { app, isImageFile } from '../app/state.svelte.ts';
+  import { sideWidth } from '../app/side-width.svelte.ts';
   import { t } from '../app/i18n/index.ts';
   import { guardWindowClose, launchFile, setWindowTitle } from '../app/platform.ts';
   import * as sfx from '../app/sfx.ts';
@@ -12,6 +13,7 @@
   import KeyHud from './base/KeyHud.svelte';
   import ProgressPill from './base/ProgressPill.svelte';
   import Toasts from './base/Toasts.svelte';
+  import AboutDialog from './dialogs/AboutDialog.svelte';
   import CanvasSizeDialog from './dialogs/CanvasSizeDialog.svelte';
   import ExportDialog from './dialogs/ExportDialog.svelte';
   import ImageSizeDialog from './dialogs/ImageSizeDialog.svelte';
@@ -21,6 +23,7 @@
   import HintBar from './HintBar.svelte';
   import OptionsBar from './OptionsBar.svelte';
   import RightPanel from './RightPanel.svelte';
+  import SideResizer from './SideResizer.svelte';
   import StatusBar from './StatusBar.svelte';
   import ToolRail from './ToolRail.svelte';
   import TopBar from './TopBar.svelte';
@@ -183,7 +186,7 @@
 
 <main class="app" aria-label={t('app.mainLabel')}>
   {#if app.doc}
-    <div class="editor">
+    <div class="editor" style:--side-w={sideWidth.width === null ? null : `${sideWidth.width}px`}>
       <div class="area-top"><TopBar /></div>
       <div class="area-rail"><ToolRail /></div>
       <div class="area-options"><OptionsBar /></div>
@@ -192,7 +195,10 @@
         <KeyHud />
       </div>
       <div class="area-hints"><HintBar /></div>
-      <div class="area-side"><RightPanel /></div>
+      <div class="area-side">
+        <RightPanel />
+        <SideResizer />
+      </div>
       <div class="area-status"><StatusBar /></div>
     </div>
   {:else}
@@ -203,6 +209,7 @@
 
 <NewImageDialog />
 <ShortcutsDialog />
+<AboutDialog />
 <CanvasSizeDialog />
 <ImageSizeDialog />
 <ExportDialog />
@@ -225,7 +232,7 @@
         'rail stage side' minmax(0, 1fr)
         'rail hints side' auto
         'status status status' auto
-        / var(--rail-w) minmax(0, 1fr) var(--panel-w);
+        / var(--rail-w) minmax(0, 1fr) var(--side-w, var(--panel-w));
       height: 100%;
       min-width: 960px;
       min-height: 640px;
@@ -262,8 +269,10 @@
     }
 
     .area-side {
+      position: relative;
       display: grid;
       grid-area: side;
+      min-width: 0;
       min-height: 0;
     }
 

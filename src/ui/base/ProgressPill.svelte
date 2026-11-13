@@ -7,7 +7,8 @@
     label?: string;
   }
 
-  let { label = t('progress.working') }: Props = $props();
+  let { label: given }: Props = $props();
+  const label = $derived(given ?? t('progress.working'));
 
   const ratio = $derived(app.progress === null ? null : Math.min(1, Math.max(0, app.progress)));
 </script>

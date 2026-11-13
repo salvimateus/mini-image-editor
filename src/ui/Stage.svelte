@@ -5,8 +5,9 @@
   import { Camera } from './camera.ts';
   import { watchCanvasBox, type CanvasBox } from './canvas-box.ts';
   import { ParticleField } from './particles.ts';
+  import { onLanguageChange } from '../app/i18n/language.svelte.ts';
   import { onThemeChange } from '../app/theme.svelte.ts';
-  import { loadStageColors, type Scene, type StageApi, type StageHost, type StagePointer } from './stage-renderer.ts';
+  import { loadStageColors, type Scene, type StageApi, type StageHost, type StagePointer, type StageSample } from './stage-renderer.ts';
 
   interface Props {
     scene: Scene;
@@ -247,10 +248,16 @@
       invalidate();
       invalidateFx();
     });
+    // The canvas labels read `t` and the number formats only when they draw.
+    const stopLanguage = onLanguageChange(() => {
+      invalidate();
+      invalidateFx();
+    });
     onready?.(api);
     return () => {
       onready?.(null);
       stopTheme();
+      stopLanguage();
       stopBox();
       motion.removeEventListener('change', applyMotion);
       wrap.removeEventListener('wheel', onWheel);
@@ -259,7 +266,22 @@
     };
   });
 
-  function pointer(event: PointerEvent | WheelEvent, samples?: readonly Point[]): StagePointer {
+  function isPen(event: PointerEvent | WheelEvent): boolean {
+    return 'pointerType' in event && event.pointerType === 'pen';
+  }
+
+  /** The pen pressure 0..1; a mouse or a touch gives a fixed pressure, so a pressure tool also works with them. */
+  function pressureOf(event: PointerEvent | WheelEvent): number {
+    if (!isPen(event)) return TUNING.paint.mousePressure;
+    const value = (event as PointerEvent).pressure;
+    return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : TUNING.paint.mousePressure;
+  }
+
+  function sample(point: Point, event: PointerEvent | WheelEvent): StageSample {
+    return { x: point.x, y: point.y, pressure: pressureOf(event) };
+  }
+
+  function pointer(event: PointerEvent | WheelEvent, samples?: readonly StageSample[]): StagePointer {
     const rect = canvas.getBoundingClientRect();
     const sx = event.clientX - rect.left;
     const sy = event.clientY - rect.top;
@@ -273,17 +295,19 @@
       alt: event.altKey,
       ctrl: event.ctrlKey || event.metaKey,
       button: drag?.button ?? event.button,
-      samples: samples ?? [p],
+      pressure: pressureOf(event),
+      pen: isPen(event),
+      samples: samples ?? [sample(p, event)],
     };
   }
 
-  /** The document points of the coalesced events of a move, the last one equal to the event itself. */
-  function coalesced(event: PointerEvent): Point[] {
+  /** The document points of the coalesced events of a move, each with its pressure; the last one is the event itself. */
+  function coalesced(event: PointerEvent): StageSample[] {
     const rect = canvas.getBoundingClientRect();
     const events = typeof event.getCoalescedEvents === 'function' ? event.getCoalescedEvents() : [];
     const list = events.length ? events : [event];
-    const points = list.map((entry) => camera.screenToImage(entry.clientX - rect.left, entry.clientY - rect.top));
-    points[points.length - 1] = camera.screenToImage(event.clientX - rect.left, event.clientY - rect.top);
+    const points = list.map((entry) => sample(camera.screenToImage(entry.clientX - rect.left, entry.clientY - rect.top), entry));
+    points[points.length - 1] = sample(camera.screenToImage(event.clientX - rect.left, event.clientY - rect.top), event);
     return points;
   }
 

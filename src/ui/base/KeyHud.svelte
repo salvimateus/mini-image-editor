@@ -21,7 +21,7 @@
             {#if index < item.keys.length - 1}<span class="hud-plus" aria-hidden="true">+</span>{/if}
           {/each}
         </span>
-        <span class="hud-label">{item.label}</span>
+        <span class="hud-label">{t(item.label)}</span>
       </div>
     {/key}
   {/if}

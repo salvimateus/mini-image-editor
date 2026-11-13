@@ -8,6 +8,7 @@ export type SoundName =
   | 'paint'
   | 'erase'
   | 'stamp'
+  | 'scratch'
   | 'fill'
   | 'pick'
   | 'snap'
@@ -205,6 +206,10 @@ const recipes: Record<SoundName, (ctx: AudioContext, out: AudioNode) => void> = 
     tone(ctx, out, { freq: 180, to: 90, dur: 0.1, type: 'sine', vol: 0.22 });
     noise(ctx, out, { dur: 0.03, vol: 0.08, cutoff: 900 });
     tone(ctx, out, { freq: E5, at: 0.035, dur: 0.07, type: 'sine', vol: 0.05 });
+  },
+  scratch(ctx, out) {
+    // Graphite on paper: a short, dry hiss with no tone.
+    noise(ctx, out, { dur: 0.045, vol: 0.022, cutoff: 3200 + Math.random() * 1400, filter: 'highpass' });
   },
   fill(ctx, out) {
     tone(ctx, out, { freq: 300, to: 980, dur: 0.18, type: 'sine', vol: 0.16 });

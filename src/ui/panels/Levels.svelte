@@ -5,7 +5,7 @@
   import { autoLevels, cleanLevels, gammaFromHandle, gammaHandle, isLevelsIdentity, LEVELS_IDENTITY } from '../../core/adjust/index.ts';
   import { PARAMS } from '../../core/params/index.ts';
   import type { AdjustOp, Histogram, LevelsParams } from '../../core/types.ts';
-  import { locale, parseDecimal, t, type TextKey } from '../../app/i18n/index.ts';
+  import { getLocale, parseDecimal, t, type TextKey } from '../../app/i18n/index.ts';
   import KeyText from '../base/KeyText.svelte';
   import * as sfx from '../../app/sfx.ts';
   import { app } from '../../app/state.svelte.ts';
@@ -39,7 +39,7 @@
     outWhite: 'adjust.levels.outWhite',
   };
 
-  const gammaFormat = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false });
+  const gammaFormat = $derived(new Intl.NumberFormat(getLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }));
 
   let params = $state<LevelsParams>({ ...LEVELS_IDENTITY });
   let histogram = $state.raw<Histogram | null>(null);

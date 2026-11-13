@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { locale, parseDecimal, t } from '../../app/i18n/index.ts';
+  import { getLocale, parseDecimal, t } from '../../app/i18n/index.ts';
   import * as sfx from '../../app/sfx.ts';
 
   interface Props {
@@ -23,7 +23,7 @@
   let { id, label, value, min, max, step, unit, disabled = false, reset, oninput, onchange }: Props = $props();
 
   const decimals = $derived(step > 0 && step < 1 ? Math.min(4, Math.ceil(-Math.log10(step) - 1e-9)) : 0);
-  const formatter = $derived(new Intl.NumberFormat(locale, { maximumFractionDigits: decimals, useGrouping: false }));
+  const formatter = $derived(new Intl.NumberFormat(getLocale(), { maximumFractionDigits: decimals, useGrouping: false }));
   const fill = $derived(max > min ? ((Math.min(max, Math.max(min, value)) - min) / (max - min)) * 100 : 0);
 
   let draft = $state<string | null>(null);
