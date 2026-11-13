@@ -1,6 +1,6 @@
 import type { Rect } from '../core/types.ts';
 import * as sfx from './sfx.ts';
-import { snapBox, snapPoint, snapTargets, type SnapTarget } from './snapping.ts';
+import { mergeHits, snapBox, snapPoint, snapTargets, type SnapTarget } from './snapping.ts';
 import { app } from './state.svelte.ts';
 import { TUNING } from './tuning/index.ts';
 
@@ -46,10 +46,19 @@ export function liveSnapTargets(bypass = false, filter?: SnapFilter): SnapTarget
   return snapTargets(doc, app.view.grid).filter((target) => (showGuides || target.kind !== 'guide') && (!filter || filter(target)));
 }
 
-/** Records the hits of the drag now: a new set flashes and plays 'snap'; an empty set ends the steady lines. */
+/**
+ * Records the hits of the drag now: a new set flashes and plays 'snap'; an empty set ends the steady lines. The same
+ * set again only follows the moved box with its layer segments.
+ */
 export function showSnapHits(next: readonly SnapTarget[]): void {
   const key = keyOf(next);
-  if (key === hitKey) return;
+  if (key === hitKey) {
+    if (next.some((target) => target.span)) {
+      hits = next;
+      app.stage?.invalidateFx();
+    }
+    return;
+  }
   const now = performance.now();
   if (next.length === 0) {
     released = hits;
@@ -65,15 +74,19 @@ export function showSnapHits(next: readonly SnapTarget[]): void {
   app.stage?.invalidateFx();
 }
 
-/** Snaps a box in document px to guides, grid, stage edges and stage center. `bypass` (Ctrl held) turns it off. */
-export function snapBoxLive(box: Rect, bypass?: boolean): { dx: number; dy: number } {
-  const targets = liveSnapTargets(bypass);
-  if (!targets) {
+/**
+ * Snaps a box in document px to guides, grid, stage edges and stage center. `bypass` (Ctrl held) turns it off.
+ * `layers` gives the targets of the other layers; it runs only while snap is on, so keep its result for the drag.
+ */
+export function snapBoxLive(box: Rect, bypass?: boolean, layers?: () => readonly SnapTarget[]): { dx: number; dy: number } {
+  const live = liveSnapTargets(bypass);
+  if (!live) {
     showSnapHits([]);
     return { dx: 0, dy: 0 };
   }
+  const targets = layers ? [...live, ...layers()] : live;
   const result = snapBox(box, targets, snapThreshold());
-  showSnapHits(result.hits);
+  showSnapHits(mergeHits(result.hits, { ...box, x: box.x + result.dx, y: box.y + result.dy }));
   return { dx: result.dx, dy: result.dy };
 }
 

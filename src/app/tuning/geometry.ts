@@ -8,6 +8,8 @@ export const GEOMETRY_TUNING = {
     fadeMs: 260,
     /** Extra line width at the start of the flash, in CSS px. */
     flashGrowPx: 4,
+    /** A layer snap line runs this far past the moved box and the target layer, in CSS px. */
+    layerOverhangPx: 6,
   },
   crop: {
     /** Side of one crop handle, in CSS px. */

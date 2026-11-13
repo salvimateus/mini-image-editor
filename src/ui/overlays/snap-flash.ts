@@ -6,16 +6,19 @@ import type { SceneOverlay } from './types.ts';
 
 function strokeTargets(fx: CanvasRenderingContext2D, host: StageHost, targets: readonly SnapTarget[], width: number): void {
   const camera = host.camera;
+  const overhang = TUNING.geometry.snap.layerOverhangPx;
   fx.beginPath();
   for (const target of targets) {
+    // A layer hit is a segment over the moved box and the target layer; the other kinds cross the whole view.
+    const span = target.span;
     if (target.axis === 'x') {
       const x = snap(camera.panX + target.pos * camera.zoom, host.dpr);
-      fx.moveTo(x, 0);
-      fx.lineTo(x, camera.viewH);
+      fx.moveTo(x, span ? camera.panY + span[0] * camera.zoom - overhang : 0);
+      fx.lineTo(x, span ? camera.panY + span[1] * camera.zoom + overhang : camera.viewH);
     } else {
       const y = snap(camera.panY + target.pos * camera.zoom, host.dpr);
-      fx.moveTo(0, y);
-      fx.lineTo(camera.viewW, y);
+      fx.moveTo(span ? camera.panX + span[0] * camera.zoom - overhang : 0, y);
+      fx.lineTo(span ? camera.panX + span[1] * camera.zoom + overhang : camera.viewW, y);
     }
   }
   fx.lineWidth = width;

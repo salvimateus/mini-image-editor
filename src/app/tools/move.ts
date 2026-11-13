@@ -8,6 +8,7 @@ import { t, type TextKey } from '../i18n/index.ts';
 import { createRasterLayer, type Layer, type RasterLayer } from '../layers.ts';
 import * as sfx from '../sfx.ts';
 import { clearSnapFeedback, snapBoxLive } from '../snap-feedback.svelte.ts';
+import { boxTargets, type SnapTarget } from '../snapping.ts';
 import { app } from '../state.svelte.ts';
 import { renderTextLayer, scaleTextSpec } from '../text-render.ts';
 import { TUNING } from '../tuning/index.ts';
@@ -31,6 +32,29 @@ export function layerBounds(doc: EditorDoc, layer: Layer): Rect | null {
   return rect ? { x: rect.x + layer.x, y: rect.y + layer.y, w: rect.w, h: rect.h } : null;
 }
 
+/** A layer that counts for align and snap: visible, opacity > 0, with pixels. `bounds` are its visible bounds in document px. */
+export interface LayerBox { layer: Layer; bounds: Rect }
+
+/** The layers that count, bottom first (the order of `doc.layers`), without the layer `exceptId`. */
+export function visibleLayerBoxes(doc: EditorDoc, exceptId?: number | null): LayerBox[] {
+  const boxes: LayerBox[] = [];
+  for (const layer of doc.layers) {
+    if (layer.id === exceptId || !layer.visible || layer.opacity <= 0) continue;
+    const bounds = layerBounds(doc, layer);
+    if (bounds) boxes.push({ layer, bounds });
+  }
+  return boxes;
+}
+
+/**
+ * The snap targets of the layers that count, without `exceptId`, for one drag. They are computed on the first call and
+ * kept, because a scan of each layer on each pointer move is too slow; make a new one for each drag.
+ */
+export function layerSnapSource(doc: EditorDoc, exceptId: number | null): () => readonly SnapTarget[] {
+  let targets: SnapTarget[] | null = null;
+  return () => (targets ??= boxTargets(visibleLayerBoxes(doc, exceptId).map((box) => box.bounds)));
+}
+
 /** True when the layer has a pixel of alpha > 0 within `reach` layer px (a square) of the layer point. */
 function hasPixelNear(layer: Layer, lx: number, ly: number, reach: number): boolean {
   const { width, height, data } = layer.image;
@@ -52,7 +76,7 @@ function hasPixelNear(layer: Layer, lx: number, ly: number, reach: number): bool
  * The top visible layer with a pixel of alpha > 0 at the document point. A shape layer also counts within a few
  * screen px of its pixels, because a thin border is hard to hit.
  */
-function layerAt(doc: EditorDoc, x: number, y: number): Layer | null {
+export function layerAt(doc: EditorDoc, x: number, y: number): Layer | null {
   const px = Math.floor(x);
   const py = Math.floor(y);
   const { hitPx, maxReachPx } = TUNING.select.shapeHit;
@@ -115,7 +139,7 @@ interface TransformSession {
   busy: boolean;
 }
 
-interface BoxDrag { handle: Handle | 'move'; start: StagePointer; startBox: Rect }
+interface BoxDrag { handle: Handle | 'move'; start: StagePointer; startBox: Rect; layers: () => readonly SnapTarget[] }
 
 let session: TransformSession | null = null;
 let boxDrag: BoxDrag | null = null;
@@ -337,7 +361,7 @@ export function transformPointerDown(p: StagePointer): boolean {
   if (!s) return false;
   if (s.busy) return true;
   const hit = hitBox(p);
-  boxDrag = hit ? { handle: hit, start: p, startBox: { ...s.box } } : null;
+  boxDrag = hit ? { handle: hit, start: p, startBox: { ...s.box }, layers: layerSnapSource(s.doc, s.layerId) } : null;
   return true;
 }
 
@@ -349,7 +373,7 @@ export function transformPointerMove(p: StagePointer): void {
   const dy = p.iy - drag.start.iy;
   if (drag.handle === 'move') {
     const moved = { ...drag.startBox, x: Math.round(drag.startBox.x + dx), y: Math.round(drag.startBox.y + dy) };
-    const snap = snapBoxLive(moved, p.ctrl);
+    const snap = snapBoxLive(moved, p.ctrl, drag.layers);
     s.box = { ...moved, x: moved.x + Math.round(snap.dx), y: moved.y + Math.round(snap.dy) };
   } else {
     const point = handlePoint(drag.startBox, drag.handle);
@@ -367,7 +391,16 @@ export function transformPointerUp(): void {
 
 // ----- move drags -----
 
-interface LayerDrag { kind: 'layer'; layerId: number; start: StagePointer; origin: Point; bounds: Rect; key: string; moved: boolean }
+interface LayerDrag {
+  kind: 'layer';
+  layerId: number;
+  start: StagePointer;
+  origin: Point;
+  bounds: Rect;
+  key: string;
+  moved: boolean;
+  layers: () => readonly SnapTarget[];
+}
 
 interface LiftDrag {
   kind: 'lift';
@@ -385,13 +418,14 @@ interface LiftDrag {
   opacity: number;
   sprite: HTMLCanvasElement;
   preview: LayerPreview;
+  layers: () => readonly SnapTarget[];
 }
 
 let drag: LayerDrag | LiftDrag | null = null;
 let dragSerial = 0;
 
 /** The pixels of the selection on a raster layer, lifted by coverage; null when the selection holds no pixel of it. */
-function prepareLift(layer: RasterLayer, selection: Mask, start: StagePointer): LiftDrag | null {
+function prepareLift(doc: EditorDoc, layer: RasterLayer, selection: Mask, start: StagePointer): LiftDrag | null {
   const bounds = selection.bounds;
   if (!bounds) return null;
   const { image } = layer;
@@ -437,6 +471,7 @@ function prepareLift(layer: RasterLayer, selection: Mask, start: StagePointer): 
     opacity: layer.opacity,
     sprite: spriteOf(piece),
     preview: { layerId: layer.id, image: { width: rect.w, height: rect.h, data: after }, rect, scale: 1 },
+    layers: layerSnapSource(doc, layer.id),
   };
 }
 
@@ -468,7 +503,7 @@ function startDrag(p: StagePointer): boolean {
   const selection = currentSelection(doc);
   const active = doc.active;
   if (selection && coverage(selection, p.ix, p.iy) > 0 && active?.kind === 'raster' && !active.generator) {
-    const lift = prepareLift(active, selection, p);
+    const lift = prepareLift(doc, active, selection, p);
     if (lift) {
       drag = lift;
       return true;
@@ -482,7 +517,7 @@ function startDrag(p: StagePointer): boolean {
   }
   const bounds = layerBounds(doc, layer) ?? { x: layer.x, y: layer.y, w: layer.image.width, h: layer.image.height };
   dragSerial += 1;
-  drag = { kind: 'layer', layerId: layer.id, start: p, origin: { x: layer.x, y: layer.y }, bounds, key: `move-${dragSerial}`, moved: false };
+  drag = { kind: 'layer', layerId: layer.id, start: p, origin: { x: layer.x, y: layer.y }, bounds, key: `move-${dragSerial}`, moved: false, layers: layerSnapSource(doc, layer.id) };
   return true;
 }
 
@@ -500,13 +535,13 @@ function moveDrag(p: StagePointer): void {
   const dy = Math.round(p.iy - current.start.iy);
   if (current.kind === 'lift') {
     const box = { x: current.at.x + dx, y: current.at.y + dy, w: current.lifted.width, h: current.lifted.height };
-    const snap = snapBoxLive(box, p.ctrl);
+    const snap = snapBoxLive(box, p.ctrl, current.layers);
     current.offset = { x: dx + Math.round(snap.dx), y: dy + Math.round(snap.dy) };
     app.stage?.invalidateFx();
     return;
   }
   const box = { ...current.bounds, x: current.bounds.x + dx, y: current.bounds.y + dy };
-  const snap = snapBoxLive(box, p.ctrl);
+  const snap = snapBoxLive(box, p.ctrl, current.layers);
   doc.setLayerProps(current.layerId, { x: current.origin.x + dx + Math.round(snap.dx), y: current.origin.y + dy + Math.round(snap.dy) }, current.key);
 }
 

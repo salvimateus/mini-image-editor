@@ -1,10 +1,16 @@
 import type { Rect } from '../core/types.ts';
 import type { EditorDoc, GridSpec } from './doc.svelte.ts';
 
-export interface SnapTarget { axis: 'x' | 'y'; pos: number; kind: 'stage-edge' | 'stage-center' | 'guide' | 'grid' }
+export interface SnapTarget {
+  axis: 'x' | 'y';
+  pos: number;
+  kind: 'stage-edge' | 'stage-center' | 'guide' | 'grid' | 'layer';
+  /** A layer target only: the extent of its line on the other axis, in document px (a segment, not a full line). */
+  span?: readonly [number, number];
+}
 
 /** On an equal distance, the earlier kind wins. */
-const PRIORITY: Record<SnapTarget['kind'], number> = { guide: 0, 'stage-edge': 1, 'stage-center': 2, grid: 3 };
+const PRIORITY: Record<SnapTarget['kind'], number> = { guide: 0, layer: 1, 'stage-edge': 2, 'stage-center': 3, grid: 4 };
 
 const EPSILON = 1e-6;
 
@@ -37,6 +43,18 @@ export function snapTargets(doc: EditorDoc, useGrid: boolean): SnapTarget[] {
   if (useGrid) {
     for (const pos of gridLines(doc.grid, width, doc.grid.cols)) targets.push({ axis: 'x', pos, kind: 'grid' });
     for (const pos of gridLines(doc.grid, height, doc.grid.rows)) targets.push({ axis: 'y', pos, kind: 'grid' });
+  }
+  return targets;
+}
+
+/** The left, center and right (x) and top, middle and bottom (y) of each box, with the extent of the box on the other axis. */
+export function boxTargets(boxes: readonly Rect[]): SnapTarget[] {
+  const targets: SnapTarget[] = [];
+  for (const box of boxes) {
+    const spanX: [number, number] = [box.x, box.x + box.w];
+    const spanY: [number, number] = [box.y, box.y + box.h];
+    for (const pos of [box.x, box.x + box.w / 2, box.x + box.w]) targets.push({ axis: 'x', pos, kind: 'layer', span: spanY });
+    for (const pos of [box.y, box.y + box.h / 2, box.y + box.h]) targets.push({ axis: 'y', pos, kind: 'layer', span: spanX });
   }
   return targets;
 }
@@ -89,4 +107,27 @@ export function snapBox(box: Rect, targets: readonly SnapTarget[], threshold: nu
 export function snapPoint(value: number, axis: 'x' | 'y', targets: readonly SnapTarget[], threshold: number): { value: number; hit: SnapTarget | null } {
   const best = nearest([value], axis, targets, threshold);
   return best ? { value: value + best.delta, hit: best.target } : { value, hit: null };
+}
+
+/**
+ * One hit for each axis and position, so that one line shows: the kind of best priority wins. When it is a layer hit,
+ * its span grows to cover `box` (the snapped box) and each layer at that position.
+ */
+export function mergeHits(hits: readonly SnapTarget[], box: Rect): SnapTarget[] {
+  const merged: SnapTarget[] = [];
+  for (const hit of hits) {
+    const index = merged.findIndex((other) => other.axis === hit.axis && Math.abs(other.pos - hit.pos) <= EPSILON);
+    if (index < 0) merged.push(hit);
+    else {
+      const other = merged[index];
+      const winner = PRIORITY[hit.kind] < PRIORITY[other.kind] ? hit : other;
+      merged[index] = winner.span && other.span && hit.span ? { ...winner, span: [Math.min(hit.span[0], other.span[0]), Math.max(hit.span[1], other.span[1])] } : winner;
+    }
+  }
+  return merged.map((hit) => {
+    if (!hit.span) return hit;
+    const from = hit.axis === 'x' ? box.y : box.x;
+    const to = hit.axis === 'x' ? box.y + box.h : box.x + box.w;
+    return { ...hit, span: [Math.min(from, hit.span[0]), Math.max(to, hit.span[1])] };
+  });
 }

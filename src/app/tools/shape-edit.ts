@@ -5,8 +5,10 @@ import type { ShapeLayer } from '../layers.ts';
 import { renderShapeLayer, shapeBox, shapeOrigin } from '../shape-render.ts';
 import * as sfx from '../sfx.ts';
 import { clearSnapFeedback, snapBoxLive, snapValueLive } from '../snap-feedback.svelte.ts';
+import type { SnapTarget } from '../snapping.ts';
 import { app } from '../state.svelte.ts';
 import { TUNING } from '../tuning/index.ts';
+import { layerSnapSource } from './move.ts';
 import { restyleSteps } from './shape-settings.svelte.ts';
 
 // The shared part of the Shapes and Steps tools and the shape handles: hit tests, the body drag, the handle drags and
@@ -82,7 +84,7 @@ export function shapeLayerAt(doc: EditorDoc, x: number, y: number): ShapeLayer |
 
 // ----- body drag: a press on a shape selects it and moves it -----
 
-interface BodyDrag { doc: EditorDoc; id: number; start: StagePointer; origin: Point; box: Rect; key: string; moved: boolean }
+interface BodyDrag { doc: EditorDoc; id: number; start: StagePointer; origin: Point; box: Rect; key: string; moved: boolean; layers: () => readonly SnapTarget[] }
 
 let body: BodyDrag | null = null;
 let serial = 0;
@@ -97,7 +99,7 @@ export function beginBodyDrag(doc: EditorDoc, layer: ShapeLayer, p: StagePointer
     sfx.play('tick');
   }
   serial += 1;
-  body = { doc, id: layer.id, start: p, origin: { x: layer.x, y: layer.y }, box: shapeBox(layer), key: `shape-move-${serial}`, moved: false };
+  body = { doc, id: layer.id, start: p, origin: { x: layer.x, y: layer.y }, box: shapeBox(layer), key: `shape-move-${serial}`, moved: false, layers: layerSnapSource(doc, layer.id) };
 }
 
 export function moveBodyDrag(p: StagePointer): void {
@@ -109,7 +111,7 @@ export function moveBodyDrag(p: StagePointer): void {
   }
   const dx = Math.round(p.ix - drag.start.ix);
   const dy = Math.round(p.iy - drag.start.iy);
-  const snap = snapBoxLive({ ...drag.box, x: drag.box.x + dx, y: drag.box.y + dy }, p.ctrl);
+  const snap = snapBoxLive({ ...drag.box, x: drag.box.x + dx, y: drag.box.y + dy }, p.ctrl, drag.layers);
   drag.doc.setLayerProps(drag.id, { x: drag.origin.x + dx + Math.round(snap.dx), y: drag.origin.y + dy + Math.round(snap.dy) }, drag.key);
 }
 

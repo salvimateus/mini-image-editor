@@ -7,8 +7,10 @@ import { areaWidth, textBox } from '../text-render.ts';
 import type { TextLayer } from '../layers.ts';
 import * as sfx from '../sfx.ts';
 import { clearSnapFeedback, snapBoxLive } from '../snap-feedback.svelte.ts';
+import type { SnapTarget } from '../snapping.ts';
 import { app } from '../state.svelte.ts';
 import { TUNING } from '../tuning/index.ts';
+import { layerSnapSource } from './move.ts';
 import type { ToolController } from './types.ts';
 
 /** A press on a text layer: it becomes a move after the drag threshold, else a click that opens the text. */
@@ -24,6 +26,7 @@ interface Press {
   box: Rect;
   moved: boolean;
   coalesce: string;
+  layers: () => readonly SnapTarget[];
 }
 
 /** A press on an empty area: a click makes a free text, a drag marks the box of an area text. */
@@ -128,6 +131,7 @@ export const textTool: ToolController = {
       box: inkBounds(hit) ?? { x: hit.x, y: hit.y, w: hit.image.width, h: hit.image.height },
       moved: false,
       coalesce: `text-drag-${pressSerial}`,
+      layers: layerSnapSource(doc, hit.id),
     };
     return true;
   },
@@ -148,7 +152,7 @@ export const textTool: ToolController = {
     drag.moved = true;
     const dx = Math.round(p.ix - drag.ix);
     const dy = Math.round(p.iy - drag.iy);
-    const snap = snapBoxLive({ x: drag.box.x + dx, y: drag.box.y + dy, w: drag.box.w, h: drag.box.h }, p.ctrl);
+    const snap = snapBoxLive({ x: drag.box.x + dx, y: drag.box.y + dy, w: drag.box.w, h: drag.box.h }, p.ctrl, drag.layers);
     doc.setLayerProps(drag.id, { x: drag.layerX + dx + snap.dx, y: drag.layerY + dy + snap.dy }, drag.coalesce);
   },
   up(p) {
