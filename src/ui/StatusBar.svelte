@@ -201,36 +201,10 @@
     }
 
     .popup {
-      position: absolute;
       bottom: calc(100% + 8px);
       left: 0;
-      z-index: 50;
-      display: grid;
       min-width: 140px;
-      padding: var(--space-1);
-      background: var(--surface-2);
-      border: 2px solid var(--line-strong);
-      border-radius: var(--radius-m);
-      box-shadow: 0 6px 0 var(--depth);
       transform-origin: bottom left;
-      animation: popup-in var(--dur-pop) var(--ease-out);
-    }
-
-    .popup-row {
-      min-height: 28px;
-      padding: 0 var(--space-2);
-      border-radius: var(--radius-s);
-      font: 800 0.8125rem/1 var(--font-display);
-      text-align: left;
-
-      &:hover,
-      &:focus-visible {
-        background: var(--primary-fill);
-      }
-
-      &.is-active {
-        color: var(--primary);
-      }
     }
 
     .weight-format {
@@ -341,13 +315,6 @@
       from {
         opacity: 0.4;
         scale: 0.9;
-      }
-    }
-
-    @keyframes popup-in {
-      from {
-        opacity: 0;
-        transform: translateY(4px) scale(0.96);
       }
     }
   }

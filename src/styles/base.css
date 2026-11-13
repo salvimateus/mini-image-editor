@@ -478,6 +478,43 @@
     }
   }
 
+  /* A small menu box (role="menu") of `.popup-row` buttons; the component places it. */
+  .popup {
+    position: absolute;
+    z-index: 50;
+    display: grid;
+    padding: var(--space-1);
+    background: var(--surface-2);
+    border: 2px solid var(--line-strong);
+    border-radius: var(--radius-m);
+    box-shadow: 0 6px 0 var(--depth);
+    animation: popup-in var(--dur-pop) var(--ease-out);
+  }
+
+  .popup-row {
+    min-height: 28px;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-s);
+    font: 800 0.8125rem/1 var(--font-display);
+    text-align: left;
+
+    &:hover:not(:disabled),
+    &:focus-visible {
+      background: var(--primary-fill);
+    }
+
+    &.is-active {
+      color: var(--primary);
+    }
+  }
+
+  @keyframes popup-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.96);
+    }
+  }
+
   @keyframes dialog-in {
     from {
       opacity: 0;
