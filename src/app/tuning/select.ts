@@ -8,9 +8,11 @@ export const SELECT_TUNING = {
   ants: { fps: 8, dashPx: 5, stepPx: 2 },
   /** The largest feather of the options bar, in document px. */
   featherMax: 100,
-  defaults: { mode: 'replace', feather: 0, tolerance: 32, contiguous: true },
+  defaults: { mode: 'replace', feather: 0, tolerance: 32, contiguous: true, alignRef: 'auto' },
   /** Floating bars: the gap from the bounds and the margin from the stage edges, in screen px. */
   bar: { gapPx: 12, edgePx: 8 },
+  /** The outline of the align reference: after an align it stays `holdMs`, then fades in `fadeMs`; `dashPx` is the dash of its line. */
+  alignRef: { holdMs: 700, fadeMs: 350, dashPx: 6 },
   /** Transform handles: the drawn side and the half side of the hit area, in screen px. */
   handle: { sizePx: 10, hitPx: 10 },
   /** The size label under the transform box, in screen px. */

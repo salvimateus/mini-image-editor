@@ -1,3 +1,4 @@
+import { alignRefOverlay } from './align-ref.ts';
 import { avatarOverlay } from './avatar.ts';
 import { brushCursorOverlay } from './brush-cursor.ts';
 import { cropOverlay } from './crop.ts';
@@ -22,6 +23,7 @@ export const OVERLAYS: readonly SceneOverlay[] = [
   guidesOverlay,
   selectionOverlay,
   cropOverlay,
+  alignRefOverlay,
   transformOverlay,
   shapeHandlesOverlay,
   textBoxOverlay,

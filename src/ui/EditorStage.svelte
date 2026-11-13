@@ -31,7 +31,8 @@
 
   function refreshCursor(): void {
     const p = hoverPoint && hoverPoint.alt !== altHeld ? { ...hoverPoint, alt: altHeld } : hoverPoint;
-    cursor = TOOLS[app.tool].cursor(p);
+    // An armed stage pick takes the next press, not the tool.
+    cursor = app.stagePick ? 'crosshair' : TOOLS[app.tool].cursor(p);
   }
 
   function onReady(next: StageApi | null): void {
@@ -142,10 +143,11 @@
     });
   });
 
-  // The overlays and the cursor follow the tool and the view switches.
+  // The overlays and the cursor follow the tool, the view switches and an armed stage pick.
   $effect(() => {
     void app.tool;
     void app.view;
+    void app.stagePick;
     untrack(() => {
       refreshCursor();
       api?.invalidateFx();

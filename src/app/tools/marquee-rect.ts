@@ -5,17 +5,23 @@ import type { StagePointer } from '../../ui/stage-renderer.ts';
 import type { EditorDoc } from '../doc.svelte.ts';
 import * as sfx from '../sfx.ts';
 import { app } from '../state.svelte.ts';
-import { onPrefsReset, readPrefs, savePrefs } from '../prefs.ts';
+import { onPrefsReset, pickField, readPrefs, savePrefs } from '../prefs.ts';
 import { TUNING } from '../tuning/index.ts';
 import type { Hint, ToolController, ToolId } from './types.ts';
 
 // The shared part of the selection tools (marquees, lasso, wand) lives here: options, press mode, live shape, commit.
 
-export interface SelectSettings { mode: MaskOp; feather: number; tolerance: number; contiguous: boolean }
+/** The align references that are stored; a reference picked on the stage is never stored. */
+export type StoredAlignRef = 'auto' | 'below' | 'stage';
+
+export interface SelectSettings { mode: MaskOp; feather: number; tolerance: number; contiguous: boolean; alignRef: StoredAlignRef }
 
 export const SELECT_MODES: readonly MaskOp[] = ['replace', 'add', 'subtract', 'intersect'];
 
+export const STORED_ALIGN_REFS: readonly StoredAlignRef[] = ['auto', 'below', 'stage'];
+
 const STORE_KEY = 'select';
+// A new field with a default does not change the version: an older value reads with that default.
 const STORE_VERSION = 1;
 
 function clamp(value: number, min: number, max: number): number {
@@ -29,6 +35,7 @@ function cleanSettings(value: Partial<Record<keyof SelectSettings, unknown>>, ba
     feather: Math.round(clamp(num(value.feather, base.feather), 0, TUNING.select.featherMax)),
     tolerance: Math.round(clamp(num(value.tolerance, base.tolerance), 0, 255)),
     contiguous: typeof value.contiguous === 'boolean' ? value.contiguous : base.contiguous,
+    alignRef: pickField(value.alignRef, STORED_ALIGN_REFS, base.alignRef),
   };
 }
 

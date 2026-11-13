@@ -1,5 +1,6 @@
 import { flatten } from '../../core/composite.ts';
 import { createRaster, unionRect } from '../../core/raster.ts';
+import { alignTarget, noteAligned } from '../align-reference.svelte.ts';
 import { t, type TextKey } from '../i18n/index.ts';
 import { createRasterLayer, duplicateLayer, layerRect } from '../layers.ts';
 import * as sfx from '../sfx.ts';
@@ -14,7 +15,7 @@ function hint(key: TextKey): void {
 
 type Edge = 'left' | 'centerH' | 'right' | 'top' | 'centerV' | 'bottom';
 
-/** Moves the active layer so that its visible bounds touch the stage edge or center. */
+/** Moves the active layer so that its visible bounds touch an edge or the center of the align reference. */
 function align(edge: Edge): ActionHandler {
   return () => {
     const doc = app.doc;
@@ -22,17 +23,20 @@ function align(edge: Edge): ActionHandler {
     cancelTransform(true);
     const layer = doc.active;
     if (!layer) return hint('select.toast.noLayer');
-    const bounds = layerBounds(doc, layer);
-    if (!bounds) return hint('select.toast.emptyLayer');
+    const b = layerBounds(doc, layer);
+    if (!b) return hint('select.toast.emptyLayer');
+    const target = alignTarget(doc);
+    const r = target.rect;
     let dx = 0;
     let dy = 0;
-    if (edge === 'left') dx = -bounds.x;
-    else if (edge === 'centerH') dx = Math.round((doc.width - bounds.w) / 2) - bounds.x;
-    else if (edge === 'right') dx = doc.width - (bounds.x + bounds.w);
-    else if (edge === 'top') dy = -bounds.y;
-    else if (edge === 'centerV') dy = Math.round((doc.height - bounds.h) / 2) - bounds.y;
-    else dy = doc.height - (bounds.y + bounds.h);
+    if (edge === 'left') dx = r.x - b.x;
+    else if (edge === 'centerH') dx = Math.round(r.x + (r.w - b.w) / 2) - b.x;
+    else if (edge === 'right') dx = r.x + r.w - (b.x + b.w);
+    else if (edge === 'top') dy = r.y - b.y;
+    else if (edge === 'centerV') dy = Math.round(r.y + (r.h - b.h) / 2) - b.y;
+    else dy = r.y + r.h - (b.y + b.h);
     if (dx !== 0 || dy !== 0) doc.batch('select.history.align', () => doc.setLayerProps(layer.id, { x: layer.x + dx, y: layer.y + dy }));
+    noteAligned(doc, target);
     sfx.play('tick');
   };
 }
