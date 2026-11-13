@@ -255,6 +255,9 @@ function drawNumber(ctx: CanvasRenderingContext2D, spec: StepSpec, cx: number, c
   const diameter = clampSide(spec.size);
   const inner = Math.max(1, diameter - 2 * Math.max(0, spec.stroke.width));
   const { scale, fit } = TUNING.shapes.stepFont;
+  // The ink metrics are relative to textAlign, and the shared canvas keeps the state of the last render.
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
   let size = diameter * scale[Math.min(scale.length - 1, text.length - 1)];
   ctx.font = stepFont(size);
   const width = ctx.measureText(text).width;
@@ -263,8 +266,6 @@ function drawNumber(ctx: CanvasRenderingContext2D, spec: StepSpec, cx: number, c
     ctx.font = stepFont(size);
   }
   const metrics = ctx.measureText(text);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'alphabetic';
   // Center the ink, not the font box: digits have no descender.
   const up = metrics.actualBoundingBoxAscent;
   const down = metrics.actualBoundingBoxDescent;
