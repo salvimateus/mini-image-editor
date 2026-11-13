@@ -8,7 +8,7 @@
   import Burst from '../base/Burst.svelte';
   import Dialog from '../base/Dialog.svelte';
 
-  const AUTHOR = { handle: '@salvimateus', url: 'https://github.com/salvimateus' };
+  const AUTHOR_URL = 'https://github.com/salvimateus';
   const FEEL = TUNING.ui.about;
   // Squash and stretch: flat on the press, tall on the rebound, then at rest.
   const SQUASH: Keyframe[] = [
@@ -53,7 +53,7 @@
     // A plain link would move the desktop window away from the app.
     event.preventDefault();
     sfx.play('tick');
-    openExternal(AUTHOR.url).catch((error: unknown) => app.fail(error));
+    openExternal(AUTHOR_URL).catch((error: unknown) => app.fail(error));
   }
 
   const close = (): void => app.openDialog('none');
@@ -77,11 +77,12 @@
     <h2 id="about-title" class="dialog-title about-line" style:--i={0}>{t('app.name')}</h2>
     <p class="about-line tagline" style:--i={1}>{t('about.tagline')}</p>
     <p class="about-line motivation" style:--i={2}>{t('about.motivation')}</p>
-    <p class="about-line meta" style:--i={3}>
-      <a class="author" href={AUTHOR.url} onclick={openAuthor}>{AUTHOR.handle}</a>
-      <span class="license">{t('about.license')}</span>
+    <p class="about-line author" style:--i={3}>
+      <span>{t('about.author')}</span>
+      <a class="author-link" href={AUTHOR_URL} onclick={openAuthor}>{t('about.authorLink')}</a>
     </p>
-    <div class="dialog-actions about-line actions" style:--i={4}>
+    <p class="about-line license" style:--i={4}>{t('about.license')}</p>
+    <div class="dialog-actions about-line actions" style:--i={5}>
       <button type="button" class="btn btn-primary close" data-autofocus onclick={close}>{t('common.close')}</button>
     </div>
   </div>
@@ -142,39 +143,34 @@
       line-height: 1.5;
     }
 
-    .meta {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: center;
-      gap: var(--space-2) var(--space-4);
-      font-size: 0.875rem;
+    .author {
+      display: grid;
+      justify-items: center;
+      gap: 2px;
     }
 
-    .author {
+    .author-link {
       display: inline-block;
-      padding: 2px var(--space-1);
-      font-weight: 800;
-      color: var(--text);
-      text-decoration: underline 2px var(--primary-edge);
+      color: var(--teal);
+      font-weight: 700;
+      text-decoration: underline;
       text-underline-offset: 3px;
       border-radius: var(--radius-s);
       transition: transform var(--dur-hover) var(--ease-spring);
 
       &:is(:hover, :focus-visible) {
+        color: var(--primary);
         transform: translateY(-2px);
       }
 
       &:active {
-        transform: translateY(1px) scale(0.97);
+        transform: translateY(1px);
         transition-duration: 60ms;
       }
     }
 
     .license {
       color: var(--text-muted);
-      font-weight: 700;
-      letter-spacing: 0.02em;
     }
 
     .actions {

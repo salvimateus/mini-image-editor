@@ -179,7 +179,9 @@ export const ptBR = {
 
   'about.tagline': 'Um editor pequeno para edições rápidas: abra, edite, exporte e feche.',
   'about.motivation': 'Feito para quem precisa de um ajuste rápido e não quer aprender um editor grande. Sua imagem nunca sai do seu computador.',
-  'about.license': 'Licença MIT',
+  'about.author': 'Desenvolvido por Mateus Salvi',
+  'about.authorLink': '@salvimateus no GitHub',
+  'about.license': 'Licença MIT.',
   'about.logoButton': 'Fazer o logo pular',
 } as const;
 
@@ -363,6 +365,8 @@ export const en: Record<keyof typeof ptBR, string> = {
 
   'about.tagline': 'A small editor for quick edits: open, edit, export, close.',
   'about.motivation': 'Made for people who need a fast change and do not want to learn a large editor. Your image never leaves your computer.',
-  'about.license': 'MIT License',
+  'about.author': 'Made by Mateus Salvi',
+  'about.authorLink': '@salvimateus on GitHub',
+  'about.license': 'MIT license.',
   'about.logoButton': 'Make the logo jump',
 };
