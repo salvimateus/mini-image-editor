@@ -321,7 +321,8 @@ Size limits: 16384 px for each side and 50 megapixels for an image. WebP permits
 
 - Version 0.1.0.
 - The Windows exe is the main target. The Linux build is prepared, but not tested.
-- There is no published release yet. Build the app from the source code.
+- Get the Windows exe of each version from the [releases page](https://github.com/salvimateus/mini-image-editor/releases/latest).
+- The Linux build has no release file yet. Build it from the source code.
 
 ## Development
 
