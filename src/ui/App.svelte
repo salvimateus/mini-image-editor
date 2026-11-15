@@ -6,7 +6,7 @@
   import { app, isImageFile } from '../app/state.svelte.ts';
   import { sideWidth } from '../app/side-width.svelte.ts';
   import { t } from '../app/i18n/index.ts';
-  import { guardWindowClose, launchFile, setWindowTitle } from '../app/platform.ts';
+  import { guardWindowClose, isDesktop, launchFile, setWindowTitle } from '../app/platform.ts';
   import * as sfx from '../app/sfx.ts';
   import { matchShortcut, type ActionId } from '../app/shortcuts.ts';
   import { TOOLS } from '../app/tools/index.ts';
@@ -91,7 +91,10 @@
     void app.openFiles(images, 'auto');
   }
 
-  /** Browser shortcuts that break the feel of a desktop app. Dev mode keeps the reload and search keys for debugging. */
+  /**
+   * Browser shortcuts that break the feel of the desktop app. Save, downloads and view source stay blocked everywhere.
+   * Reload, print and find stay blocked only in the desktop app, outside dev mode.
+   */
   function blockBrowserKeys(event: KeyboardEvent): void {
     const mod = event.ctrlKey || event.metaKey;
     const key = event.key.toLowerCase();
@@ -99,7 +102,7 @@
       event.preventDefault();
       return;
     }
-    if (DEV) return;
+    if (DEV || !isDesktop) return;
     if (event.key === 'F5' || (mod && (key === 'r' || key === 'p' || key === 'f'))) event.preventDefault();
   }
 
