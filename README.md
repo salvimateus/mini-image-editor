@@ -78,7 +78,12 @@ The six color themes.
 - With a text or shape layer active, the magic wand reads the pixels of that layer. It does not add a layer.
 - When the active layer is hidden, the magic wand shows "The active layer is hidden. Show the layer to select in it."
 - Soft edge, select all, deselect and invert.
-- A floating bar next to the selection erases it or fills it with the foreground color.
+- A floating bar next to the selection copies it, cuts it, erases it or fills it with the foreground color.
+- Ctrl+C copies the selected pixels of the active layer, and keeps the soft edge. With no selection, it copies the full layer.
+- Ctrl+X cuts the selection: it copies and erases the pixels in one undo step. It operates only on normal pixel layers, like Erase.
+- Ctrl+V pastes a copy from the app as a new layer at the same position, with the exact pixels.
+- The copy also goes to the system clipboard as a PNG, so other apps can paste it.
+- The Edit menu has Cut, Copy and Paste.
 - The paint tools and the adjustments change only the pixels inside the selection.
 - With the move tool, drag inside a selection to move its pixels to a new layer with the name "Cutout".
 - Layers panel: thumbnail, visibility, opacity, rename, drag to reorder, new, duplicate, delete and merge down.
@@ -241,6 +246,9 @@ The app does not restore the last tool or an open panel. To put all the settings
 | File | Export | Ctrl+S |
 | Edit | Undo | Ctrl+Z |
 | Edit | Redo | Ctrl+Shift+Z or Ctrl+Y |
+| Edit | Cut | Ctrl+X |
+| Edit | Copy | Ctrl+C |
+| Edit | Paste | Ctrl+V |
 | Tools | Move | V |
 | Tools | Rectangle selection | M |
 | Tools | Ellipse selection | Shift+M |
