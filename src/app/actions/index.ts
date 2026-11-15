@@ -4,6 +4,7 @@ import type { ActionId, ActionSource } from '../shortcuts.ts';
 import * as sfx from '../sfx.ts';
 import { app } from '../state.svelte.ts';
 import { adjustActions } from './adjust.ts';
+import { clipboardActions } from './clipboard.ts';
 import { coreActions } from './core.ts';
 import { exportActions } from './export.ts';
 import { geometryActions } from './geometry.ts';
@@ -15,6 +16,7 @@ import type { ActionHandler } from './types.ts';
 
 const HANDLERS: Record<ActionId, ActionHandler> = {
   ...coreActions,
+  ...clipboardActions,
   ...exportActions,
   ...geometryActions,
   ...adjustActions,

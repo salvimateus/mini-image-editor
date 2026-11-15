@@ -1,6 +1,8 @@
 <script lang="ts">
+  import Copy from '@lucide/svelte/icons/copy';
   import Eraser from '@lucide/svelte/icons/eraser';
   import PaintBucket from '@lucide/svelte/icons/paint-bucket';
+  import Scissors from '@lucide/svelte/icons/scissors';
   import SquareDashed from '@lucide/svelte/icons/square-dashed';
   import { runAction } from '../../app/actions/index.ts';
   import { t } from '../../app/i18n/index.ts';
@@ -11,7 +13,9 @@
   import { TUNING } from '../../app/tuning/index.ts';
   import Keys from '../base/Keys.svelte';
 
-  const BUTTONS: readonly { id: ActionId; text: 'select.bar.erase' | 'select.bar.fill' | 'select.bar.none'; icon: typeof Eraser }[] = [
+  const BUTTONS: readonly { id: ActionId; text: 'select.bar.copy' | 'select.bar.cut' | 'select.bar.erase' | 'select.bar.fill' | 'select.bar.none'; icon: typeof Eraser }[] = [
+    { id: 'edit.copy', text: 'select.bar.copy', icon: Copy },
+    { id: 'edit.cut', text: 'select.bar.cut', icon: Scissors },
     { id: 'select.erase', text: 'select.bar.erase', icon: Eraser },
     { id: 'select.fill', text: 'select.bar.fill', icon: PaintBucket },
     { id: 'select.none', text: 'select.bar.none', icon: SquareDashed },

@@ -16,7 +16,7 @@
 
   const MENUS: readonly { id: string; label: TextKey; items: readonly (ActionId | null)[] }[] = [
     { id: 'file', label: 'menu.file', items: ['file.new', 'file.open', null, 'layer.addImage', null, 'file.export', null, 'file.close'] },
-    { id: 'edit', label: 'menu.edit', items: ['edit.undo', 'edit.redo'] },
+    { id: 'edit', label: 'menu.edit', items: ['edit.undo', 'edit.redo', null, 'edit.cut', 'edit.copy', 'edit.paste'] },
     { id: 'image', label: 'menu.image', items: ['image.canvasSize', 'image.imageSize', null, 'tool.crop'] },
     { id: 'adjust', label: 'menu.adjust', items: ['adjust.hueSaturation', 'adjust.levels', 'adjust.sharpen', 'adjust.vignette', null, 'adjust.frame'] },
     {

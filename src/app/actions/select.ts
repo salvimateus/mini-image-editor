@@ -1,21 +1,21 @@
 import { invertMask, rectMask, type Mask } from '../../core/mask.ts';
-import { blitRaster, createRaster, intersectRect, readRect, unionRect } from '../../core/raster.ts';
-import type { Rect, Rgba } from '../../core/types.ts';
+import { blitRaster, createRaster, cropRaster, intersectRect, opaqueBounds, readRect, unionRect } from '../../core/raster.ts';
+import type { Patch, RasterImage, Rect, Rgba } from '../../core/types.ts';
 import type { EditorDoc } from '../doc.svelte.ts';
 import { t, type TextKey } from '../i18n/index.ts';
-import { layerRect, type RasterLayer } from '../layers.ts';
+import { layerRect, type Layer, type RasterLayer } from '../layers.ts';
 import * as sfx from '../sfx.ts';
 import { app } from '../state.svelte.ts';
 import { currentSelection } from '../tools/marquee-rect.ts';
 import { cancelTransform } from '../tools/move.ts';
 import type { ActionHandlers, SelectActionId } from './types.ts';
 
-function hint(key: TextKey): void {
+export function hint(key: TextKey): void {
   app.refuse(t(key));
 }
 
 /** The selection of the open document; a short hint when there is none. */
-function selectionOrHint(doc: EditorDoc): Mask | null {
+export function selectionOrHint(doc: EditorDoc): Mask | null {
   const selection = currentSelection(doc);
   if (!selection) hint('select.toast.noSelection');
   return selection;
@@ -46,6 +46,53 @@ function eraseByCoverage(data: Uint8ClampedArray, rect: Rect, selection: Mask, o
     }
   }
   return changed;
+}
+
+/** A layer whose own pixels the selection can erase: a raster layer that no generator renders. */
+export function erasableLayer(layer: Layer | null): layer is RasterLayer {
+  return layer !== null && layer.kind === 'raster' && !layer.generator;
+}
+
+/** The patch that erases the selection from the layer by coverage; null when no pixel changes. */
+export function erasePatch(layer: RasterLayer, selection: Mask): Patch | null {
+  const rect = selectionRect(selection, layer, { x: 0, y: 0, w: layer.image.width, h: layer.image.height });
+  if (!rect) return null;
+  const before = readRect(layer.image, rect);
+  const after = before.slice();
+  return eraseByCoverage(after, rect, selection, layer.x, layer.y) ? { rect, before, after } : null;
+}
+
+/** Pixels taken from a layer, with their top-left corner in document px. */
+export interface LayerPiece { image: RasterImage; x: number; y: number }
+
+/**
+ * The pixels of the layer under the selection, with alpha scaled by coverage, cropped to the opaque part. With no
+ * selection, the whole layer cropped to its opaque part. Null when no pixel is left.
+ */
+export function selectionPiece(layer: Layer, selection: Mask | null): LayerPiece | null {
+  const area = { x: 0, y: 0, w: layer.image.width, h: layer.image.height };
+  const rect = selection ? selectionRect(selection, layer, area) : area;
+  if (!rect) return null;
+  const data = readRect(layer.image, rect);
+  if (selection) {
+    for (let y = 0; y < rect.h; y++) {
+      const docY = rect.y + layer.y + y;
+      for (let x = 0; x < rect.w; x++) {
+        const docX = rect.x + layer.x + x;
+        const inside = docY >= 0 && docY < selection.height && docX >= 0 && docX < selection.width;
+        const cover = inside ? selection.data[docY * selection.width + docX] : 0;
+        const o = (y * rect.w + x) * 4;
+        if (cover === 255) continue;
+        const alpha = Math.round((data[o + 3] * cover) / 255);
+        if (alpha === 0) data.fill(0, o, o + 4);
+        else data[o + 3] = alpha;
+      }
+    }
+  }
+  const full: RasterImage = { width: rect.w, height: rect.h, data };
+  const tight = opaqueBounds(full);
+  if (!tight) return null;
+  return { image: cropRaster(full, tight), x: layer.x + rect.x + tight.x, y: layer.y + rect.y + tight.y };
 }
 
 /** Paints `color` over each pixel with the coverage of the selection as its alpha (straight-alpha "over"). */
@@ -143,18 +190,16 @@ export const selectActions: ActionHandlers<SelectActionId> = {
     if (!selection) return;
     cancelTransform(true);
     const layer = doc.active;
-    if (!layer || layer.kind !== 'raster' || layer.generator) {
+    if (!erasableLayer(layer)) {
       hint('select.toast.notRaster');
       return;
     }
-    const rect = selectionRect(selection, layer, { x: 0, y: 0, w: layer.image.width, h: layer.image.height });
-    const before = rect ? readRect(layer.image, rect) : null;
-    const after = before ? before.slice() : null;
-    if (!rect || !before || !after || !eraseByCoverage(after, rect, selection, layer.x, layer.y)) {
+    const patch = erasePatch(layer, selection);
+    if (!patch) {
       hint('select.toast.nothingErased');
       return;
     }
-    doc.commitPatch(layer.id, { rect, before, after }, 'select.history.erase');
+    doc.commitPatch(layer.id, patch, 'select.history.erase');
     sfx.play('delete');
   },
   'select.fill': () => {

@@ -8,6 +8,9 @@ export type ActionId =
   | 'file.close'
   | 'edit.undo'
   | 'edit.redo'
+  | 'edit.copy'
+  | 'edit.cut'
+  | 'edit.paste'
   | `tool.${ToolId}`
   | 'image.canvasSize'
   | 'image.imageSize'
@@ -64,7 +67,8 @@ export interface KeyCombo { code?: string; key?: string; ctrl?: boolean; alt?: b
 
 export type ShortcutGroup = 'file' | 'edit' | 'tools' | 'image' | 'adjust' | 'select' | 'layer' | 'view';
 
-export interface ShortcutDef { id: ActionId; combos: readonly KeyCombo[]; label: TextKey; group: ShortcutGroup; whileTyping?: boolean }
+/** `browserEvent`: the key is left to the browser, which turns it into an event (paste) that runs the action. */
+export interface ShortcutDef { id: ActionId; combos: readonly KeyCombo[]; label: TextKey; group: ShortcutGroup; whileTyping?: boolean; browserEvent?: boolean }
 
 const key = (value: string, mods: Omit<KeyCombo, 'key' | 'code'> = {}): KeyCombo => ({ key: value, ...mods });
 const ctrl = (value: string, mods: Omit<KeyCombo, 'key' | 'code' | 'ctrl'> = {}): KeyCombo => ({ key: value, ctrl: true, ...mods });
@@ -82,6 +86,9 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
 
   { id: 'edit.undo', combos: [ctrl('z')], label: 'action.edit.undo', group: 'edit' },
   { id: 'edit.redo', combos: [ctrl('z', { shift: true }), ctrl('y')], label: 'action.edit.redo', group: 'edit' },
+  { id: 'edit.copy', combos: [ctrl('c')], label: 'action.edit.copy', group: 'edit' },
+  { id: 'edit.cut', combos: [ctrl('x')], label: 'action.edit.cut', group: 'edit' },
+  { id: 'edit.paste', combos: [ctrl('v')], label: 'action.edit.paste', group: 'edit', browserEvent: true },
 
   { id: 'tool.move', combos: [key('v')], label: 'chrome.tool.move', group: 'tools' },
   { id: 'tool.marquee-rect', combos: [key('m')], label: 'chrome.tool.marquee-rect', group: 'tools' },

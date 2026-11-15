@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { runAction } from '../app/actions/index.ts';
-  import { pastedFiles } from '../app/clipboard.ts';
+  import { dropHeldCopy, heldCopy, pastedFiles } from '../app/clipboard.ts';
   import { keyHud } from '../app/key-hud.svelte.ts';
   import { app, isImageFile } from '../app/state.svelte.ts';
   import { sideWidth } from '../app/side-width.svelte.ts';
@@ -78,9 +78,14 @@
     return target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
   }
 
-  /** The welcome screen takes its own paste; in the editor an image becomes a layer. */
+  /** The welcome screen takes its own paste; in the editor the copy of the app, or an image, becomes a layer. */
   function onPaste(event: ClipboardEvent): void {
     if (!app.doc || dialogOpen() || isEditable(event.target)) return;
+    if (heldCopy()) {
+      event.preventDefault();
+      runAction('edit.paste', 'key');
+      return;
+    }
     const files = pastedFiles(event.clipboardData);
     const images = files.filter(isImageFile);
     event.preventDefault();
@@ -125,7 +130,8 @@
       event.preventDefault();
       return;
     }
-    if (!def) return;
+    // A key that the browser turns into an event (Ctrl+V into paste) must not be stopped here.
+    if (!def || def.browserEvent) return;
     event.preventDefault();
     if (event.repeat && !REPEATABLE.has(def.id)) return;
     runAction(def.id, 'key');
@@ -187,9 +193,14 @@
   onpaste={onPaste}
   onkeydown={onKeyDown}
   onkeyup={(event) => keyHud.keyUp(event)}
-  onblur={() => keyHud.reset()}
+  onblur={() => {
+    keyHud.reset();
+    dropHeldCopy();
+  }}
   oncontextmenu={onContextMenu}
 />
+
+<svelte:document onvisibilitychange={() => document.hidden && dropHeldCopy()} />
 
 <main class="app" aria-label={t('app.mainLabel')}>
   {#if app.doc}

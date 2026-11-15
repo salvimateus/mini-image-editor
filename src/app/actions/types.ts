@@ -6,7 +6,8 @@ export type ActionHandler = (source: ActionSource) => void;
 export type ActionHandlers<K extends ActionId> = Record<K, ActionHandler>;
 
 /** The ids of each action file. The index checks that the merged maps hold every ActionId. */
-export type CoreActionId = Extract<ActionId, `file.${'open' | 'new' | 'close'}` | `edit.${string}` | `tool.${string}` | `view.${string}` | `color.${string}` | `help.${string}`>;
+export type ClipboardActionId = Extract<ActionId, `edit.${'copy' | 'cut' | 'paste'}`>;
+export type CoreActionId = Exclude<Extract<ActionId, `file.${'open' | 'new' | 'close'}` | `edit.${string}` | `tool.${string}` | `view.${string}` | `color.${string}` | `help.${string}`>, ClipboardActionId>;
 export type ExportActionId = Extract<ActionId, 'file.export'>;
 export type GeometryActionId = Extract<ActionId, `image.${string}` | `guides.${string}`>;
 export type AdjustActionId = Extract<ActionId, `adjust.${string}`>;
