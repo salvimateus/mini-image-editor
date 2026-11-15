@@ -24,6 +24,7 @@ export const ptBR = {
   'adjust.blocked.generated': 'A camada ativa é a vinheta. Use o painel Vinheta para mudá-la.',
   'adjust.blocked.frame': 'A camada ativa é a moldura. Use o painel Moldura para mudá-la.',
   'adjust.blocked.shape': 'A camada ativa é uma forma. Escolha uma camada de imagem no painel Camadas.',
+  'adjust.blocked.svg': 'A camada ativa é um SVG. Escolha uma camada de imagem no painel Camadas.',
   'adjust.layerNote': 'Camada: {name}',
   'adjust.selectionNote': 'Só dentro da seleção',
 
@@ -113,6 +114,7 @@ export const en: Record<keyof typeof ptBR, string> = {
   'adjust.blocked.generated': 'The active layer is the vignette. Use the Vignette panel to change it.',
   'adjust.blocked.frame': 'The active layer is the frame. Use the Frame panel to change it.',
   'adjust.blocked.shape': 'The active layer is a shape. Choose an image layer in the Layers panel.',
+  'adjust.blocked.svg': 'The active layer is an SVG. Choose an image layer in the Layers panel.',
   'adjust.layerNote': 'Layer: {name}',
   'adjust.selectionNote': 'Only inside the selection',
 

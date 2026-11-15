@@ -4,16 +4,17 @@ import { CoreError, errorCode } from '../core/errors.ts';
 import { FORMAT_INFO } from '../core/formats.ts';
 import { PARAMS } from '../core/params/index.ts';
 import { createRaster } from '../core/raster.ts';
-import type { ExportFormat, RasterImage, Rgba } from '../core/types.ts';
+import type { ExportFormat, RasterImage, Rgba, SvgSpec } from '../core/types.ts';
 import type { StageApi, StagePointer } from '../ui/stage-renderer.ts';
 import { EditorDoc } from './doc.svelte.ts';
 import { ImageEngine } from './engine.ts';
 import { cleanBaseName } from './file-name.ts';
 import { t } from './i18n/index.ts';
 import { lastGrid } from './last-used.ts';
-import { createRasterLayer } from './layers.ts';
+import { createRasterLayer, createSvgLayer } from './layers.ts';
 import { colorField, onPrefsReset, pickField, readJson, readPrefs, savePrefs } from './prefs.ts';
 import * as sfx from './sfx.ts';
+import { fitSvgSpec, growSvgSpec, isSvgFile, readSvgFile, renderSvgLayer } from './svg-render.ts';
 import { TOOLS } from './tools/index.ts';
 import type { ToolId } from './tools/types.ts';
 import { TUNING } from './tuning/index.ts';
@@ -162,11 +163,11 @@ function docName(file: File): string {
   return cleanBaseName(file.name.replace(/\.[^.]+$/, '')) || t('chrome.untitled');
 }
 
-const ACCEPTED_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/bmp', 'image/x-ms-bmp']);
-const ACCEPTED_EXTENSIONS = /\.(png|jpe?g|jfif|webp|gif|bmp)$/i;
+const ACCEPTED_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/bmp', 'image/x-ms-bmp', 'image/svg+xml']);
+const ACCEPTED_EXTENSIONS = /\.(png|jpe?g|jfif|webp|gif|bmp|svg)$/i;
 
 /** The value of the `accept` attribute of every image file input. */
-export const IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,image/bmp,.png,.jpg,.jpeg,.webp,.gif,.bmp';
+export const IMAGE_ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,image/bmp,image/svg+xml,.png,.jpg,.jpeg,.webp,.gif,.bmp,.svg';
 
 /** A file that the app tries to open as an image: a known type, or a known extension when the type is empty. */
 export function isImageFile(file: File): boolean {
@@ -451,6 +452,19 @@ class AppState {
     }
   }
 
+  /** The SVG of the file at the size that `fit` gives, rendered on the main thread: the decode worker has no DOM. */
+  private async renderSvgFile(file: File, fit: (spec: SvgSpec) => SvgSpec): Promise<{ spec: SvgSpec; image: RasterImage; external: boolean } | null> {
+    try {
+      const parsed = await readSvgFile(file);
+      const spec = fit(parsed.spec);
+      const image = await this.track(renderSvgLayer(spec));
+      return { spec, image, external: parsed.external };
+    } catch (error) {
+      this.fail(error);
+      return null;
+    }
+  }
+
   private warnIfLarge(width: number, height: number): void {
     const pixels = width * height;
     if (pixels > PARAMS.limits.warnPixels) this.toast(t('chrome.bigImage', { mp: Math.round(pixels / 1e6) }), 'info');
@@ -467,28 +481,44 @@ class AppState {
     if (images.length < files.length) this.toast(t('toast.skippedFiles', { count: files.length - images.length }), 'info');
     const mode = as === 'auto' ? (this.doc ? 'layer' : 'document') : this.doc ? as : 'document';
     let rest = images;
+    // One note for each action, however many SVG files refer to outside fonts or images.
+    let external = false;
     if (mode === 'document') {
       if (!(await this.confirmDiscard())) return;
       const [first] = images;
       rest = images.slice(1);
-      const image = await this.decodeFile(first);
-      if (!image) return;
       const name = docName(first);
-      this.setDocument(
-        new EditorDoc({ width: image.width, height: image.height, name, layers: [createRasterLayer(name, image)], sourceBytes: first.size }),
-      );
+      let doc: EditorDoc;
+      if (isSvgFile(first)) {
+        const svg = await this.renderSvgFile(first, (spec) => growSvgSpec(spec, PARAMS.svg.minDocumentSide));
+        if (!svg) return;
+        const { spec, image } = svg;
+        external = svg.external;
+        // No source size: the export compare would set a text file against a raster encode.
+        doc = new EditorDoc({ width: image.width, height: image.height, name, layers: [createSvgLayer(name, spec, image, 0, 0)], sourceBytes: null });
+      } else {
+        const image = await this.decodeFile(first);
+        if (!image) return;
+        doc = new EditorDoc({ width: image.width, height: image.height, name, layers: [createRasterLayer(name, image)], sourceBytes: first.size });
+      }
+      this.setDocument(doc);
       sfx.play('open');
-      this.warnIfLarge(image.width, image.height);
+      this.warnIfLarge(doc.width, doc.height);
     }
-    for (const file of rest) await this.addImageLayer(file);
+    for (const file of rest) if (await this.addImageLayer(file)) external = true;
+    if (external) this.toast(t('chrome.svgExternal'), 'info');
   }
 
-  /** Adds the image above the active layer, centered; an image larger than the stage is fitted inside it. */
-  private async addImageLayer(file: File): Promise<void> {
+  /**
+   * Adds the image above the active layer, centered; an image larger than the stage is fitted inside it. True when it
+   * is an SVG that refers to fonts or images outside the file.
+   */
+  private async addImageLayer(file: File): Promise<boolean> {
     const doc = this.doc;
-    if (!doc) return;
+    if (!doc) return false;
+    if (isSvgFile(file)) return this.addSvgLayer(doc, file);
     let image = await this.decodeFile(file);
-    if (!image || this.doc !== doc) return;
+    if (!image || this.doc !== doc) return false;
     const name = docName(file);
     let fitted = false;
     if (image.width > doc.width || image.height > doc.height) {
@@ -499,9 +529,9 @@ class AppState {
         image = await this.track(this.engine.resize(image, width, height, 'auto'));
       } catch (error) {
         this.fail(error);
-        return;
+        return false;
       }
-      if (this.doc !== doc) return;
+      if (this.doc !== doc) return false;
       fitted = true;
     }
     const x = Math.round((doc.width - image.width) / 2);
@@ -509,6 +539,21 @@ class AppState {
     doc.addLayer(createRasterLayer(name, image, x, y));
     sfx.play('layer');
     this.toast(fitted ? t('chrome.layerFitted', { name }) : t('chrome.layerAdded', { name }), fitted ? 'info' : 'success');
+    return false;
+  }
+
+  /** Adds the SVG above the active layer, centered, at the largest size that fits inside the stage (up or down). */
+  private async addSvgLayer(doc: EditorDoc, file: File): Promise<boolean> {
+    const svg = await this.renderSvgFile(file, (spec) => fitSvgSpec(spec, doc.width, doc.height));
+    if (!svg || this.doc !== doc) return false;
+    const { spec, image } = svg;
+    const name = docName(file);
+    const x = Math.round((doc.width - image.width) / 2);
+    const y = Math.round((doc.height - image.height) / 2);
+    doc.addLayer(createSvgLayer(name, spec, image, x, y));
+    sfx.play('layer');
+    this.toast(t('chrome.layerAdded', { name }), 'success');
+    return svg.external;
   }
 
   async newDocument(width: number, height: number, fill: Rgba | null): Promise<void> {

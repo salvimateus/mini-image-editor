@@ -1,5 +1,5 @@
 import { cloneRaster, opaqueBounds } from '../core/raster.ts';
-import type { FrameParams, RasterImage, Rect, ShapeSpec, TextSpec, VignetteParams } from '../core/types.ts';
+import type { FrameParams, RasterImage, Rect, ShapeSpec, SvgSpec, TextSpec, VignetteParams } from '../core/types.ts';
 import { t } from './i18n/index.ts';
 
 /** opacity 0..1; x and y = top-left corner in document px. */
@@ -15,7 +15,10 @@ export interface TextLayer extends LayerBase { kind: 'text'; spec: TextSpec; ima
 /** image = render cache of the spec. */
 export interface ShapeLayer extends LayerBase { kind: 'shape'; spec: ShapeSpec; image: RasterImage }
 
-export type Layer = RasterLayer | TextLayer | ShapeLayer;
+/** image = render cache of the spec, made again from the vector at each new size. */
+export interface SvgLayer extends LayerBase { kind: 'svg'; spec: SvgSpec; image: RasterImage }
+
+export type Layer = RasterLayer | TextLayer | ShapeLayer | SvgLayer;
 
 let lastLayerId = 0;
 
@@ -37,11 +40,16 @@ export function createShapeLayer(name: string, spec: ShapeSpec, image: RasterIma
   return { id: nextLayerId(), kind: 'shape', name, visible: true, opacity: 1, x: Math.round(x), y: Math.round(y), spec: cloneShapeSpec(spec), image };
 }
 
+export function createSvgLayer(name: string, spec: SvgSpec, image: RasterImage, x: number, y: number): SvgLayer {
+  return { id: nextLayerId(), kind: 'svg', name, visible: true, opacity: 1, x: Math.round(x), y: Math.round(y), spec: { ...spec }, image };
+}
+
 /** A copy with a new id and its own pixels: painting one never changes the other. */
 export function duplicateLayer(layer: Layer, name: string): Layer {
   const base = { id: nextLayerId(), name, visible: layer.visible, opacity: layer.opacity, x: layer.x, y: layer.y };
   if (layer.kind === 'text') return { ...base, kind: 'text', spec: cloneTextSpec(layer.spec), image: cloneRaster(layer.image) };
   if (layer.kind === 'shape') return { ...base, kind: 'shape', spec: cloneShapeSpec(layer.spec), image: cloneRaster(layer.image) };
+  if (layer.kind === 'svg') return { ...base, kind: 'svg', spec: { ...layer.spec }, image: cloneRaster(layer.image) };
   const generator = layer.generator ? cloneGenerator(layer.generator) : undefined;
   return { ...base, kind: 'raster', image: cloneRaster(layer.image), ...(generator ? { generator } : {}) };
 }

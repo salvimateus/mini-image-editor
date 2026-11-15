@@ -138,6 +138,7 @@ export const ptBR = {
   'chrome.nothingRedo': 'Não há nada para refazer.',
   'chrome.layerAdded': 'A imagem {name} virou uma nova camada.',
   'chrome.layerFitted': 'A imagem {name} era maior que a tela e foi reduzida para caber.',
+  'chrome.svgExternal': 'Este SVG usa fontes ou imagens de fora do arquivo, que não carregam. Converta o texto em contorno e embuta as imagens.',
   'chrome.bigImage': 'Imagem grande ({mp} megapixels): algumas ações podem ficar lentas.',
 
   'newImage.title': 'Nova imagem',
@@ -324,6 +325,7 @@ export const en: Record<keyof typeof ptBR, string> = {
   'chrome.nothingRedo': 'There is nothing to redo.',
   'chrome.layerAdded': '{name} is now a new layer.',
   'chrome.layerFitted': '{name} was larger than the canvas, so it was made smaller to fit.',
+  'chrome.svgExternal': 'This SVG uses fonts or images from outside the file, and they do not load. Convert the text to outlines and embed the images.',
   'chrome.bigImage': 'Large image ({mp} megapixels): some actions can be slow.',
 
   'newImage.title': 'New image',

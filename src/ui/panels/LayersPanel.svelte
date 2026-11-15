@@ -7,6 +7,7 @@
   import ImagePlus from '@lucide/svelte/icons/image-plus';
   import Merge from '@lucide/svelte/icons/merge';
   import Pencil from '@lucide/svelte/icons/pencil';
+  import PenTool from '@lucide/svelte/icons/pen-tool';
   import Plus from '@lucide/svelte/icons/plus';
   import Shapes from '@lucide/svelte/icons/shapes';
   import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal';
@@ -150,24 +151,26 @@
     sfx.play('tick');
   }
 
-  interface EditorMeta { mark: typeof Type; markLabel: TextKey; tone: 'text' | 'shape' | 'generated'; edit: typeof Pencil; editLabel: TextKey }
+  /** edit = the button that opens the editor of the layer; null for a kind with no editor (an SVG layer). */
+  interface EditorMeta { mark: typeof Type; markLabel: TextKey; tone: 'text' | 'shape' | 'svg' | 'generated'; edit: { icon: typeof Pencil; label: TextKey } | null }
 
-  /** The mark and the edit button of a layer that has its own editor; null for a plain raster layer. */
+  /** The kind mark of a layer and the edit button of its editor; null for a plain raster layer. */
   function editorMeta(layer: Layer): EditorMeta | null {
-    if (layer.kind === 'text') return { mark: Type, markLabel: 'select.layers.text', tone: 'text', edit: Pencil, editLabel: 'select.layers.editText' };
+    if (layer.kind === 'text') return { mark: Type, markLabel: 'select.layers.text', tone: 'text', edit: { icon: Pencil, label: 'select.layers.editText' } };
     if (layer.kind === 'shape') {
       return layer.spec.kind === 'step'
-        ? { mark: CircleDot, markLabel: 'select.layers.step', tone: 'shape', edit: Pencil, editLabel: 'select.layers.editStep' }
-        : { mark: Shapes, markLabel: 'select.layers.shape', tone: 'shape', edit: Pencil, editLabel: 'select.layers.editShape' };
+        ? { mark: CircleDot, markLabel: 'select.layers.step', tone: 'shape', edit: { icon: Pencil, label: 'select.layers.editStep' } }
+        : { mark: Shapes, markLabel: 'select.layers.shape', tone: 'shape', edit: { icon: Pencil, label: 'select.layers.editShape' } };
     }
-    if (layer.generator?.kind === 'frame') return { mark: Frame, markLabel: 'select.layers.frame', tone: 'generated', edit: SlidersHorizontal, editLabel: 'select.layers.editFrame' };
-    if (layer.generator) return { mark: Sparkles, markLabel: 'select.layers.generated', tone: 'generated', edit: SlidersHorizontal, editLabel: 'select.layers.editGenerated' };
+    if (layer.kind === 'svg') return { mark: PenTool, markLabel: 'select.layers.svg', tone: 'svg', edit: null };
+    if (layer.generator?.kind === 'frame') return { mark: Frame, markLabel: 'select.layers.frame', tone: 'generated', edit: { icon: SlidersHorizontal, label: 'select.layers.editFrame' } };
+    if (layer.generator) return { mark: Sparkles, markLabel: 'select.layers.generated', tone: 'generated', edit: { icon: SlidersHorizontal, label: 'select.layers.editGenerated' } };
     return null;
   }
 
   /** Makes the layer active and opens its editor: the tool of a text or shape layer, the panel of a generated layer. */
   function openEditor(layer: Layer): void {
-    if (!doc || !editorMeta(layer)) return;
+    if (!doc || !editorMeta(layer)?.edit) return;
     if (doc.activeId !== layer.id) doc.setActive(layer.id);
     if (layer.kind === 'text') {
       if (app.tool === 'text') sfx.play('tick');
@@ -177,7 +180,7 @@
       const tool = layer.spec.kind === 'step' ? 'step' : 'shape';
       if (app.tool === tool) sfx.play('tick');
       app.setTool(tool);
-    } else if (layer.generator) {
+    } else if (layer.kind === 'raster' && layer.generator) {
       runAction(layer.generator.kind === 'frame' ? 'adjust.frame' : 'adjust.vignette', 'pointer');
     }
   }
@@ -322,6 +325,7 @@
                 class="row-mark"
                 class:is-generated={meta.tone === 'generated'}
                 class:is-shape={meta.tone === 'shape'}
+                class:is-svg={meta.tone === 'svg'}
                 role="img"
                 aria-label={t(meta.markLabel)}
                 use:tooltip={{ text: t(meta.markLabel) }}
@@ -361,9 +365,10 @@
               {#if !layer.visible}<span class="visually-hidden">({t('select.layers.hidden')})</span>{/if}
             </button>
           {/if}
-          {#if meta}
-            {@const Edit = meta.edit}
-            <button type="button" class="row-edit" aria-label={t(meta.editLabel)} use:tooltip={{ text: t(meta.editLabel) }} onclick={() => openEditor(layer)}>
+          {#if meta?.edit}
+            {@const Edit = meta.edit.icon}
+            {@const editLabel = meta.edit.label}
+            <button type="button" class="row-edit" aria-label={t(editLabel)} use:tooltip={{ text: t(editLabel) }} onclick={() => openEditor(layer)}>
               <Edit size={14} strokeWidth={2.5} />
             </button>
           {/if}
@@ -602,6 +607,10 @@
 
       &.is-shape {
         color: var(--pink);
+      }
+
+      &.is-svg {
+        color: var(--primary);
       }
     }
 

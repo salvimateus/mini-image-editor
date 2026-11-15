@@ -128,8 +128,8 @@ export const selectActions: ActionHandlers<SelectActionId> = {
     const doc = app.doc;
     if (!doc) return;
     const active = doc.active;
-    // With no selection, Delete removes a whole text or shape layer: it has no pixels of its own to erase.
-    if (!currentSelection(doc) && active && (active.kind === 'text' || active.kind === 'shape')) {
+    // With no selection, Delete removes a whole text, shape or SVG layer: it has no pixels of its own to erase.
+    if (!currentSelection(doc) && active && (active.kind === 'text' || active.kind === 'shape' || active.kind === 'svg')) {
       cancelTransform(true);
       if (doc.layers.length <= 1) {
         hint('select.toast.lastLayer');

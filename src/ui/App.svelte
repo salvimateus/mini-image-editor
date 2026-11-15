@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { runAction } from '../app/actions/index.ts';
+  import { pastedFiles } from '../app/clipboard.ts';
   import { keyHud } from '../app/key-hud.svelte.ts';
   import { app, isImageFile } from '../app/state.svelte.ts';
   import { sideWidth } from '../app/side-width.svelte.ts';
@@ -80,8 +81,7 @@
   /** The welcome screen takes its own paste; in the editor an image becomes a layer. */
   function onPaste(event: ClipboardEvent): void {
     if (!app.doc || dialogOpen() || isEditable(event.target)) return;
-    const items = Array.from(event.clipboardData?.items ?? []);
-    const files = items.filter((item) => item.kind === 'file').map((item) => item.getAsFile()).filter((file): file is File => file !== null);
+    const files = pastedFiles(event.clipboardData);
     const images = files.filter(isImageFile);
     event.preventDefault();
     if (images.length === 0) {

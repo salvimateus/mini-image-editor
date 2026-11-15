@@ -1,7 +1,7 @@
 import { flatten as flattenLayers, sampleComposite, type FlatLayer } from '../core/composite.ts';
 import { translateMask, type Mask } from '../core/mask.ts';
 import { cloneRaster, createRaster, intersectRect, readRect, unionRect, writeRect } from '../core/raster.ts';
-import type { Patch, Point, RasterImage, Rect, Rgba, ShapeSpec, TextSpec } from '../core/types.ts';
+import type { Patch, Point, RasterImage, Rect, Rgba, ShapeSpec, SvgSpec, TextSpec } from '../core/types.ts';
 import { History, type HistoryEntry } from './history.svelte.ts';
 import { t, type TextKey } from './i18n/index.ts';
 import { cloneShapeSpec, cloneTextSpec, createRasterLayer, isRenderedLayer, layerRect, type Layer, type LayerBase, type RasterLayer } from './layers.ts';
@@ -386,6 +386,26 @@ export class EditorDoc {
     });
   }
 
+  /** A new SVG render size and its render, at `at` (document px, rounded) or at the same position. Undo puts back all three. */
+  setSvgSpec(id: number, spec: SvgSpec, image: RasterImage, coalesce?: string, at?: Point): void {
+    const layer = this.layer(id);
+    if (!layer || layer.kind !== 'svg') return;
+    type SvgState = { spec: SvgSpec; image: RasterImage; x: number; y: number };
+    const before: SvgState = { spec: layer.spec, image: layer.image, x: layer.x, y: layer.y };
+    const after: SvgState = { spec: { ...spec }, image: this.ownImage(image, id), x: at ? Math.round(at.x) : layer.x, y: at ? Math.round(at.y) : layer.y };
+    const apply = (value: SvgState) => {
+      this.replaceLayer(id, (entry) => (entry.kind === 'svg' ? { ...entry, spec: value.spec, image: value.image, x: value.x, y: value.y } : entry));
+      this.touch();
+    };
+    this.record({
+      label: 'history.svgResize',
+      bytes: image.data.byteLength,
+      coalesce: coalesce === undefined ? undefined : `svg:${id}:${coalesce}`,
+      redo: () => apply(after),
+      undo: () => apply(before),
+    });
+  }
+
   /** A new image for the layer, at `at` (document px) or at the same position. The old image stays by reference for undo. */
   replaceImage(id: number, image: RasterImage, at: Point | null, label: TextKey): void {
     const layer = this.layer(id);
@@ -536,7 +556,7 @@ export class EditorDoc {
 
   // ----- paint target, flatten, sample -----
 
-  /** The active raster layer. For a text, shape or generated layer, or no layer, a new raster layer above it (in the history). */
+  /** The active raster layer. For a text, shape, SVG or generated layer, or no layer, a new raster layer above it (in the history). */
   paintTarget(): RasterLayer {
     const active = this.active;
     if (active && active.kind === 'raster' && !isRenderedLayer(active)) return active;

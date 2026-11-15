@@ -63,4 +63,7 @@ export type ShapeSpec =
   | { kind: 'arrow'; dx: number; dy: number; style: 'thin' | 'thick'; size: number; fill: Rgba; stroke: StrokeStyle }
   | { kind: 'step'; number: number; size: number; fill: Rgba; stroke: StrokeStyle; textColor: Rgba; shadow?: boolean }; // shadow: a drop shadow under the badge; no value = on
 
+/** An SVG layer: the normalized source (its root has a viewBox), its natural size and the render size, in whole px. */
+export interface SvgSpec { source: string; naturalWidth: number; naturalHeight: number; width: number; height: number }
+
 export interface FrameParams { width: number; color: Rgba }

@@ -8,7 +8,7 @@ const FORBIDDEN = /[\\/:*?"<>|\u0000-\u001f]/;
 // Windows reserves these device names, also with an extension ("con.png", "com1.x").
 const RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
 // The extensions that a user types by habit at the end of an image name.
-const IMAGE_EXTENSION = /\.(png|jpe?g|jfif|webp|gif|bmp|ico|avif|tiff?)$/i;
+const IMAGE_EXTENSION = /\.(png|jpe?g|jfif|webp|gif|bmp|ico|avif|tiff?|svg)$/i;
 
 /** The problem of a base name (no extension, already trimmed by `cleanBaseName`), or null when it is a valid file name. */
 export function fileNameProblem(base: string): FileNameProblem | null {

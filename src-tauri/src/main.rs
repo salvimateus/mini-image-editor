@@ -7,7 +7,7 @@ use tauri::{Manager, PhysicalPosition, PhysicalRect, PhysicalSize, State, Webvie
 use tauri_plugin_fs::FsExt;
 use tauri_plugin_window_state::StateFlags;
 
-const IMAGE_EXTENSIONS: [&str; 6] = ["png", "jpg", "jpeg", "webp", "gif", "bmp"];
+const IMAGE_EXTENSIONS: [&str; 7] = ["png", "jpg", "jpeg", "webp", "gif", "bmp", "svg"];
 const WINDOWS_MAX_PATH: usize = 260;
 const MAIN_WINDOW: &str = "main";
 

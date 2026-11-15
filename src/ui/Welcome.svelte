@@ -4,6 +4,7 @@
   import ImageUp from '@lucide/svelte/icons/image-up';
   import ShieldCheck from '@lucide/svelte/icons/shield-check';
   import logoUrl from '../../app-icon.svg';
+  import { pastedFiles } from '../app/clipboard.ts';
   import { app, IMAGE_ACCEPT, isImageFile, prefersReducedMotion } from '../app/state.svelte.ts';
   import { t } from '../app/i18n/index.ts';
   import * as sfx from '../app/sfx.ts';
@@ -77,8 +78,7 @@
 
   function onPaste(event: ClipboardEvent): void {
     if (app.confirmRequest || isEditable(event.target)) return;
-    const items = Array.from(event.clipboardData?.items ?? []);
-    const files = items.filter((item) => item.kind === 'file').map((item) => item.getAsFile()).filter((file): file is File => file !== null);
+    const files = pastedFiles(event.clipboardData);
     event.preventDefault();
     if (files.length === 0) {
       app.refuse(t('toast.nothingToPaste'));

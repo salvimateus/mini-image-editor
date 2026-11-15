@@ -112,6 +112,7 @@
     if (!layer) return 'adjust.blocked.noLayer';
     if (layer.kind === 'text') return 'adjust.blocked.text';
     if (layer.kind === 'shape') return 'adjust.blocked.shape';
+    if (layer.kind === 'svg') return 'adjust.blocked.svg';
     if (layer.generator) return layer.generator.kind === 'frame' ? 'adjust.blocked.frame' : 'adjust.blocked.generated';
     return null;
   });

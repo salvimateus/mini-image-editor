@@ -10,6 +10,7 @@ import * as sfx from '../sfx.ts';
 import { clearSnapFeedback, snapBoxLive } from '../snap-feedback.svelte.ts';
 import { boxTargets, type SnapTarget } from '../snapping.ts';
 import { app } from '../state.svelte.ts';
+import { renderSvgLayer, scaleSvgSpec } from '../svg-render.ts';
 import { renderTextLayer, scaleTextSpec } from '../text-render.ts';
 import { TUNING } from '../tuning/index.ts';
 import { currentSelection, leftSlop, stageDragging } from './marquee-rect.ts';
@@ -128,7 +129,8 @@ interface TransformSession {
   doc: EditorDoc;
   layerId: number;
   image: RasterImage;
-  text: boolean;
+  /** A text or SVG layer renders again from its spec, so it keeps its proportions. */
+  proportional: boolean;
   /** The visible bounds at the start, in document px. */
   origin: Rect;
   /** The box now, in document px (not rounded). */
@@ -198,7 +200,7 @@ export function startTransform(): void {
     doc,
     layerId: layer.id,
     image: layer.image,
-    text: layer.kind === 'text',
+    proportional: layer.kind === 'text' || layer.kind === 'svg',
     origin: bounds,
     box: { ...bounds },
     sprite: spriteOf(cropRaster(layer.image, local)),
@@ -225,7 +227,7 @@ function roundBox(box: Rect): Rect {
   return { x, y, w: Math.max(1, Math.round(box.x + box.w) - x), h: Math.max(1, Math.round(box.y + box.h) - y) };
 }
 
-/** Applies the box: a raster layer is resampled, a text layer renders again at the new size. One undo step. */
+/** Applies the box: a raster layer is resampled, a text or SVG layer renders again at the new size. One undo step. */
 export async function applyTransform(): Promise<void> {
   const s = liveSession();
   if (!s || s.busy) return;
@@ -258,6 +260,15 @@ export async function applyTransform(): Promise<void> {
         doc.setTextSpec(layer.id, spec, image);
         doc.setLayerProps(layer.id, at);
       });
+    } else if (layer.kind === 'svg') {
+      // The vector renders again at the new size, so a scale never blurs it.
+      const spec = scaleSvgSpec(layer.spec, box.w / origin.w, box.h / origin.h);
+      const image = await app.track(renderSvgLayer(spec));
+      if (session !== s || !liveSession()) return;
+      const bounds = opaqueBounds(image);
+      const at = { x: box.x - (bounds?.x ?? 0), y: box.y - (bounds?.y ?? 0) };
+      endSession();
+      doc.batch('select.history.transform', () => doc.setSvgSpec(layer.id, spec, image, undefined, at));
     } else if (layer.kind === 'raster') {
       const local = { x: origin.x - layer.x, y: origin.y - layer.y, w: origin.w, h: origin.h };
       const resized = await app.track(app.engine.resize(cropRaster(layer.image, local), box.w, box.h, 'auto'));
@@ -377,7 +388,7 @@ export function transformPointerMove(p: StagePointer): void {
     s.box = { ...moved, x: moved.x + Math.round(snap.dx), y: moved.y + Math.round(snap.dy) };
   } else {
     const point = handlePoint(drag.startBox, drag.handle);
-    s.box = resizeBox(drag.startBox, drag.handle, point.x + dx, point.y + dy, p.shift && !s.text);
+    s.box = resizeBox(drag.startBox, drag.handle, point.x + dx, point.y + dy, p.shift && !s.proportional);
   }
   app.stage?.invalidateFx();
 }

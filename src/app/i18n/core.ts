@@ -11,7 +11,7 @@ export const ptBR = {
   'sound.unmute': 'Ligar sons',
 
   'toast.close': 'Fechar aviso',
-  'toast.notImage': 'Não deu para abrir este arquivo como imagem. Use PNG, JPG, WebP, GIF ou BMP.',
+  'toast.notImage': 'Não deu para abrir este arquivo como imagem. Use PNG, JPG, WebP, GIF, BMP ou SVG.',
   'toast.skippedFiles': '{count} arquivos ficaram de fora porque não são imagens.',
   'toast.nothingToPaste': 'Não há imagem na área de transferência. Copie uma imagem e tente de novo.',
 
@@ -42,7 +42,7 @@ export const ptBR = {
   'welcome.open': 'Abrir imagem',
   'welcome.new': 'Nova imagem',
   'welcome.paste': 'Ou cole uma imagem com',
-  'welcome.formats': 'PNG, JPG, WebP, GIF ou BMP',
+  'welcome.formats': 'PNG, JPG, WebP, GIF, BMP ou SVG',
   'welcome.privacy': 'Sua imagem nunca sai do seu computador.',
   'welcome.inputLabel': 'Escolher uma imagem',
 } as const;
@@ -59,7 +59,7 @@ export const en: Record<keyof typeof ptBR, string> = {
   'sound.unmute': 'Turn sounds on',
 
   'toast.close': 'Close message',
-  'toast.notImage': 'This file could not be opened as an image. Use PNG, JPG, WebP, GIF or BMP.',
+  'toast.notImage': 'This file could not be opened as an image. Use PNG, JPG, WebP, GIF, BMP or SVG.',
   'toast.skippedFiles': '{count} files were left out because they are not images.',
   'toast.nothingToPaste': 'There is no image on the clipboard. Copy an image and try again.',
 
@@ -90,7 +90,7 @@ export const en: Record<keyof typeof ptBR, string> = {
   'welcome.open': 'Open image',
   'welcome.new': 'New image',
   'welcome.paste': 'Or paste an image with',
-  'welcome.formats': 'PNG, JPG, WebP, GIF or BMP',
+  'welcome.formats': 'PNG, JPG, WebP, GIF, BMP or SVG',
   'welcome.privacy': 'Your image never leaves your computer.',
   'welcome.inputLabel': 'Choose an image',
 };
