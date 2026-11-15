@@ -1,3 +1,4 @@
+import { track } from '../analytics.ts';
 import { keyHud } from '../key-hud.svelte.ts';
 import type { ActionId, ActionSource } from '../shortcuts.ts';
 import * as sfx from '../sfx.ts';
@@ -67,6 +68,7 @@ export function runAction(id: ActionId, source: ActionSource): void {
     return;
   }
   if (app.view.hud) keyHud.show(id, source === 'key' ? 'press' : 'hint');
+  track('app_action', { action_id: id, via: source });
   try {
     HANDLERS[id](source);
   } catch (error) {

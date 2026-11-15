@@ -6,6 +6,7 @@ import { PARAMS } from '../core/params/index.ts';
 import { createRaster } from '../core/raster.ts';
 import type { ExportFormat, RasterImage, Rgba, SvgSpec } from '../core/types.ts';
 import type { StageApi, StagePointer } from '../ui/stage-renderer.ts';
+import { track } from './analytics.ts';
 import { EditorDoc } from './doc.svelte.ts';
 import { ImageEngine } from './engine.ts';
 import { cleanBaseName } from './file-name.ts';
@@ -166,6 +167,12 @@ function docName(file: File): string {
   return cleanBaseName(file.name.replace(/\.[^.]+$/, '')) || t('chrome.untitled');
 }
 
+function trackOpen(file: File, mode: 'document' | 'layer', width: number, height: number): void {
+  const svg = isSvgFile(file);
+  const format = (/\.([^.]+)$/.exec(file.name)?.[1] ?? file.type.replace(/^image\//, '')).toLowerCase().slice(0, 10);
+  track('image_open', { kind: svg ? 'svg' : 'raster', format, mode, width, height });
+}
+
 const ACCEPTED_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/bmp', 'image/x-ms-bmp', 'image/svg+xml']);
 const ACCEPTED_EXTENSIONS = /\.(png|jpe?g|jfif|webp|gif|bmp|svg)$/i;
 
@@ -303,6 +310,7 @@ class AppState {
 
   /** A load failure in a tab of an old build shows the new-version note instead of the error. */
   fail(error: unknown): void {
+    track('app_error', { error_code: errorCode(error) });
     if (!isLoadFailure(error)) {
       this.showError(error);
       return;
@@ -548,6 +556,7 @@ class AppState {
       this.setDocument(doc);
       sfx.play('open');
       this.warnIfLarge(doc.width, doc.height);
+      trackOpen(first, 'document', doc.width, doc.height);
     }
     for (const file of rest) if (await this.addImageLayer(file)) external = true;
     if (external) this.toast(t('chrome.svgExternal'), 'info');
@@ -564,6 +573,7 @@ class AppState {
     let image = await this.decodeFile(file);
     if (!image || this.doc !== doc) return false;
     const name = docName(file);
+    const source = { width: image.width, height: image.height };
     let fitted = false;
     if (image.width > doc.width || image.height > doc.height) {
       const scale = Math.min(doc.width / image.width, doc.height / image.height);
@@ -582,6 +592,7 @@ class AppState {
     const y = Math.round((doc.height - image.height) / 2);
     doc.addLayer(createRasterLayer(name, image, x, y));
     sfx.play('layer');
+    trackOpen(file, 'layer', source.width, source.height);
     this.toast(fitted ? t('chrome.layerFitted', { name }) : t('chrome.layerAdded', { name }), fitted ? 'info' : 'success');
     return false;
   }
@@ -596,6 +607,7 @@ class AppState {
     const y = Math.round((doc.height - image.height) / 2);
     doc.addLayer(createSvgLayer(name, spec, image, x, y));
     sfx.play('layer');
+    trackOpen(file, 'layer', image.width, image.height);
     this.toast(t('chrome.layerAdded', { name }), 'success');
     return svg.external;
   }

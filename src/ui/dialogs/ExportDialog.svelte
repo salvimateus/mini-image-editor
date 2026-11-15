@@ -14,6 +14,7 @@
   import type { EditorDoc } from '../../app/doc.svelte.ts';
   import { exportOptions } from '../../app/estimate.svelte.ts';
   import { formatBytes, t, type TextKey } from '../../app/i18n/index.ts';
+  import { track } from '../../app/analytics.ts';
   import { isDesktop, revealFile, saveFile, type SaveResult } from '../../app/platform.ts';
   import * as sfx from '../../app/sfx.ts';
   import { app, prefersReducedMotion } from '../../app/state.svelte.ts';
@@ -222,6 +223,7 @@
     const savedFormat = format;
     const savedQuality = quality;
     const base = name;
+    const size = { width, height };
     phase = 'saving';
     let result: SaveResult;
     try {
@@ -240,6 +242,7 @@
     // The file exists from here on, even when the dialog closed meanwhile.
     target.history.markClean();
     target.name = base;
+    track('image_export', { format: FORMAT_INFO[savedFormat].ext, width: size.width, height: size.height, bytes: file.bytes.byteLength });
     app.setExportPrefs({ format: savedFormat, jpegQuality: savedQuality });
     sfx.play('saved');
     if (mine !== session) return;
