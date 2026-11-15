@@ -14,6 +14,7 @@ import { lastGrid } from './last-used.ts';
 import { createRasterLayer, createSvgLayer } from './layers.ts';
 import { colorField, onPrefsReset, pickField, readJson, readPrefs, savePrefs } from './prefs.ts';
 import * as sfx from './sfx.ts';
+import { checkStaleBuild, isLoadFailure } from './stale-build.ts';
 import { fitSvgSpec, growSvgSpec, isSvgFile, readSvgFile, renderSvgLayer } from './svg-render.ts';
 import { TOOLS } from './tools/index.ts';
 import type { ToolId } from './tools/types.ts';
@@ -31,6 +32,8 @@ export interface ToastItem {
   text: string;
   kind: ToastKind;
   action: ToastAction | null;
+  /** Stays until the user closes it; the toast limit drops the other toasts first. */
+  sticky: boolean;
 }
 
 export interface ConfirmRequest {
@@ -215,6 +218,7 @@ class AppState {
 
   private toastId = 0;
   private historyToast = 0;
+  private newVersionToast = 0;
 
   constructor() {
     const colors = loadColors();
@@ -257,12 +261,18 @@ class AppState {
     sfx.setMuted(this.muted);
   }
 
-  /** Returns the toast id, for `dismissToast`. */
+  /** Returns the toast id, for `dismissToast`. An `ms` of Infinity makes a sticky toast. */
   toast(text: string, kind: ToastKind = 'info', action?: ToastAction, ms?: number): number {
     const id = ++this.toastId;
-    this.toasts = [...this.toasts, { id, text, kind, action: action ?? null }].slice(-TUNING.ui.maxToasts);
     const life = ms ?? (action ? TUNING.ui.toastActionMs : kind === 'error' ? TUNING.ui.toastErrorMs : TUNING.ui.toastMs);
-    setTimeout(() => this.dismissToast(id), life);
+    const sticky = life === Infinity;
+    const list = [...this.toasts, { id, text, kind, action: action ?? null, sticky }];
+    while (list.length > TUNING.ui.maxToasts) {
+      const oldest = list.findIndex((toast) => !toast.sticky);
+      list.splice(Math.max(oldest, 0), 1);
+    }
+    this.toasts = list;
+    if (!sticky) setTimeout(() => this.dismissToast(id), life);
     return id;
   }
 
@@ -291,9 +301,43 @@ class AppState {
     return t(`error.${errorCode(error)}`);
   }
 
+  /** A load failure in a tab of an old build shows the new-version note instead of the error. */
   fail(error: unknown): void {
+    if (!isLoadFailure(error)) {
+      this.showError(error);
+      return;
+    }
+    void checkStaleBuild().then((stale) => {
+      if (stale) this.onNewVersion();
+      else this.showError(error);
+    });
+  }
+
+  /** A file of the app did not load: when the server has a newer build, reload or ask for a reload. */
+  handleLoadFailure(): void {
+    void checkStaleBuild().then((stale) => {
+      if (stale) this.onNewVersion();
+    });
+  }
+
+  private showError(error: unknown): void {
     sfx.play('error');
     this.toast(this.errorText(error), 'error');
+  }
+
+  /**
+   * With no unsaved work, the page reloads at once. Else a note asks the user to save and reload; the reload goes
+   * through the leave guard. The first note is sticky; after the user closes it, later failures show a timed one.
+   */
+  private onNewVersion(): void {
+    if (!this.doc?.history.dirty) {
+      location.reload();
+      return;
+    }
+    if (this.toasts.some((toast) => toast.id === this.newVersionToast)) return;
+    const first = this.newVersionToast === 0;
+    const action = { label: t('toast.reload'), run: () => location.reload() };
+    this.newVersionToast = this.toast(t('toast.newVersion'), 'info', action, first ? Infinity : undefined);
   }
 
   /** An action that cannot run now: a soft sound and a short note that says why. Not an error. */

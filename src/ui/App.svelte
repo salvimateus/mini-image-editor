@@ -145,6 +145,9 @@
 
   onMount(() => {
     window.addEventListener('wheel', onWheel, { passive: false });
+    // A lazy chunk that did not load. The caller still gets the error; this only looks for a new app version.
+    const onPreloadError = (): void => app.handleLoadFailure();
+    window.addEventListener('vite:preloadError', onPreloadError);
     let disposed = false;
     let unguard: (() => void) | null = null;
     guardWindowClose(
@@ -168,6 +171,7 @@
       disposed = true;
       unguard?.();
       window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('vite:preloadError', onPreloadError);
     };
   });
 </script>

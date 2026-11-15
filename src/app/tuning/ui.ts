@@ -5,6 +5,8 @@ export const UI_TUNING = {
   /** A toast with an action button stays longer, so the user can reach the button. */
   toastActionMs: 7000,
   maxToasts: 4,
+  /** After a load failure, the check for a new app version waits this long for the server; then the plain error shows. */
+  staleCheckTimeoutMs: 4000,
   /** The progress pill shows only for work that lasts longer than this. */
   progressDelayMs: 150,
   /** Two history entries with one coalesce key merge when they come inside this time. */

@@ -14,6 +14,8 @@ export const ptBR = {
   'toast.notImage': 'Não deu para abrir este arquivo como imagem. Use PNG, JPG, WebP, GIF, BMP ou SVG.',
   'toast.skippedFiles': '{count} arquivos ficaram de fora porque não são imagens.',
   'toast.nothingToPaste': 'Não há imagem na área de transferência. Copie uma imagem e tente de novo.',
+  'toast.newVersion': 'Há uma versão nova do app. Salve o seu trabalho e recarregue a página.',
+  'toast.reload': 'Recarregar',
 
   'error.read': 'Não deu para abrir este arquivo. Tente outro arquivo de imagem.',
 
@@ -62,6 +64,8 @@ export const en: Record<keyof typeof ptBR, string> = {
   'toast.notImage': 'This file could not be opened as an image. Use PNG, JPG, WebP, GIF, BMP or SVG.',
   'toast.skippedFiles': '{count} files were left out because they are not images.',
   'toast.nothingToPaste': 'There is no image on the clipboard. Copy an image and try again.',
+  'toast.newVersion': 'There is a new version of the app. Save your work and reload the page.',
+  'toast.reload': 'Reload',
 
   'error.read': 'This file could not be opened. Try another image file.',
 
