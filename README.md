@@ -331,7 +331,7 @@ Size limits: 16384 px for each side and 50 megapixels for an image. WebP permits
 
 ## Privacy
 
-- Your image never leaves your computer. The app opens, edits and exports it locally, with no upload, no account and no telemetry.
+- Your image never leaves your computer. The app opens, edits and exports it locally, with no upload and no account. The desktop app sends no data. The web version sends anonymous usage events to Google Analytics, such as the export format or an error code, with no image and no file name.
 - The text tool downloads fonts from the Google Fonts servers. Each request sends your IP address and the font name to Google. The font Inter is in the app and needs no download.
 - The settings that the app remembers stay on your computer, and the app sends none of them. The window size and position stay in a file of the desktop app. The other settings stay in the local storage of the app web view.
 
