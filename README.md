@@ -8,6 +8,8 @@
 
 > A free desktop app, made with Tauri 2, Svelte 5 and TypeScript. Your image stays on your computer.
 
+**Try it in your browser:** [mini-image-editor-mu.vercel.app](https://mini-image-editor-mu.vercel.app). No install is necessary. For the desktop app, get the Windows exe from the [releases page](https://github.com/salvimateus/mini-image-editor/releases/latest).
+
 ![The editor window with an image open, three layers, a rectangle selection with its action bar, the color panel, the layers panel and the status bar](docs/screenshots/editor.webp)
 
 ## The app
@@ -15,6 +17,7 @@
 - Use it when you must do a fast change to an image and do not want to learn a large editor.
 - There is no project file. Open an image, edit it and export a new file.
 - Edit with layers, selections, paint tools, shapes, numbered steps, adjustments and text.
+- Open SVG files as SVG layers that stay sharp at all sizes, and export them as PNG with a transparent background.
 - Export an optimized PNG, WebP, JPG or ICO, and see the file size before you save.
 - Each action gives a short sound and a visual response.
 - The interface is in English and in Brazilian Portuguese. By default, the app uses the language of your system. You can select a different language in the app.
@@ -53,7 +56,7 @@ The six color themes.
 
 ### Image and canvas
 
-- Open PNG, JPG, WebP, GIF and BMP files. Drop a file into the window, paste it, or use the open dialog.
+- Open PNG, JPG, WebP, GIF, BMP and SVG files. Drop a file into the window, paste it, or use the open dialog. You can also paste SVG markup from the clipboard. See [SVG layers](#svg-layers).
 - Make a new empty image. The dialog has the presets Square, Landscape, Story and Icon, a button that swaps the width and height, and a transparent, white or black background.
 - Canvas size: set the new width and height in px or %, also relative to the current size. Select the anchor in a 3 x 3 grid and the fill: transparent, white, black, the foreground color or the background color.
 - Crop tool with 8 handles. You can drag a handle out of the image to make the canvas larger. Push Enter to apply and Esc to cancel. The layers keep their pixels outside the canvas.
@@ -83,6 +86,21 @@ The six color themes.
 - Move tool: drag a layer, or push an arrow key to move it 1 px (10 px with Shift).
 - Resize a layer with handles. The resize is proportional; hold Shift to resize freely.
 - Align a layer to the canvas: left, center, right, top, middle or bottom. The alignment uses the visible pixels of the layer.
+
+### SVG layers
+
+- Open an SVG file, add it as a layer, drop it, or paste it. You can also paste SVG markup from the clipboard.
+- On the desktop app, you can open an `.svg` file with the exe as its launch file.
+- An SVG becomes an SVG layer, like a smart object. The layer keeps the vector.
+- Ctrl+T and Image size render the SVG again at the new size, so it stays sharp.
+- An SVG that you add to an open image fills the canvas and keeps its aspect ratio.
+- A small SVG that you open as a new image opens with a minimum of 1024 px on its longest side.
+- Export gives a PNG (or another format) with a transparent background.
+- The pixel tools paint on a new layer above an SVG layer. The adjustments do not operate on an SVG layer.
+- Merge down changes an SVG layer into a normal pixel layer.
+
+> [!NOTE]
+> For security, the app shows an SVG as a plain browser image. Thus, web fonts and linked images (files outside the SVG) do not load. The app shows a message when an SVG has them. Tip: when you export the SVG from your design app, change the text to outlines and embed the images.
 
 ### Paint
 
@@ -322,6 +340,7 @@ Size limits: 16384 px for each side and 50 megapixels for an image. WebP permits
 - Version 0.1.1.
 - The Windows exe is the main target. The Linux build is prepared, but not tested.
 - Get the Windows exe of each version from the [releases page](https://github.com/salvimateus/mini-image-editor/releases/latest).
+- Use the web version in your browser at [mini-image-editor-mu.vercel.app](https://mini-image-editor-mu.vercel.app). Each change on `main` updates it.
 - The Linux build has no release file yet. Build it from the source code.
 
 ## Development
