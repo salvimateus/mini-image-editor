@@ -6,13 +6,13 @@ export const LIMITS_PARAMS = {
   maxPixels: 50_000_000,
   /** Above this area the app warns that the work can be slow. */
   warnPixels: 25_000_000,
-  /** Most documents open at the same time, one tab each. The undo history of each one adds to the memory. */
+  /** Most documents open at the same time, one tab each. */
   maxDocuments: 8,
 } as const;
 
 /** Undo history limits. */
 export const HISTORY_PARAMS = {
-  /** Largest sum of the bytes that the undo and redo entries keep. */
+  /** Largest sum of the bytes that the undo and redo entries of all open documents keep. */
   budgetBytes: 512 * 1024 * 1024,
   /** Largest number of undo steps. */
   maxSteps: 200,

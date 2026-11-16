@@ -61,8 +61,56 @@ function now(): number {
 }
 
 /**
- * Undo and redo stacks with a byte budget and a step limit (PARAMS.history). `dirty` compares the image state of the
- * current step with the one of the last markClean; neutral steps do not count.
+ * One byte budget (PARAMS.history.budgetBytes) shared by several histories, one per open document. Above it, the
+ * oldest undo step of all members goes first; the newest step of each history always stays.
+ */
+export class HistoryBudget {
+  private readonly members = new Set<History>();
+
+  /** The sum of the bytes of the member histories. */
+  get bytes(): number {
+    let total = 0;
+    for (const history of this.members) total += history.bytes;
+    return total;
+  }
+
+  /** Counts `history` in the budget, and trims when the sum goes above it. */
+  add(history: History): void {
+    history.budget?.remove(history);
+    this.members.add(history);
+    history.budget = this;
+    this.trim();
+  }
+
+  /** Stops counting `history`; it trims alone against the full budget again. */
+  remove(history: History): void {
+    if (!this.members.delete(history)) return;
+    history.budget = null;
+  }
+
+  trim(): void {
+    const { budgetBytes } = PARAMS.history;
+    let total = this.bytes;
+    while (total > budgetBytes) {
+      let oldest: History | null = null;
+      let oldestAt = Infinity;
+      for (const history of this.members) {
+        const at = history.oldestDroppableAt();
+        if (at !== null && at < oldestAt) {
+          oldest = history;
+          oldestAt = at;
+        }
+      }
+      if (!oldest) return;
+      total -= oldest.dropOldest();
+    }
+  }
+}
+
+/**
+ * Undo and redo stacks with a byte budget and a step limit (PARAMS.history). The byte budget is shared when the
+ * history is a member of a HistoryBudget. `dirty` compares the image state of the current step with the one of the
+ * last markClean; neutral steps do not count.
  */
 export class History {
   private undoStack: Step[] = [];
@@ -71,6 +119,8 @@ export class History {
   /** The content serial of the state below the oldest undo step. */
   private base = 0;
   private totalBytes = 0;
+  /** Set by HistoryBudget only. */
+  budget: HistoryBudget | null = null;
   #state = $state({ undo: 0, redo: 0, top: 0, clean: 0, undoLabel: null as TextKey | null, redoLabel: null as TextKey | null });
 
   get canUndo(): boolean {
@@ -156,14 +206,30 @@ export class History {
     return top ? top.content : this.base;
   }
 
+  /** For HistoryBudget: the time of the oldest undo step that can go, or null when only the newest step is left. */
+  oldestDroppableAt(): number | null {
+    return this.undoStack.length > 1 ? this.undoStack[0].at : null;
+  }
+
+  /** For HistoryBudget: drops the oldest undo step and returns its bytes. */
+  dropOldest(): number {
+    if (this.undoStack.length <= 1) return 0;
+    const dropped = this.undoStack.shift() as Step;
+    this.totalBytes -= dropped.bytes;
+    this.base = dropped.content;
+    this.sync();
+    return dropped.bytes;
+  }
+
   /** Drops the oldest steps above the limits; the newest step always stays. */
   private trim(): void {
     const { budgetBytes, maxSteps } = PARAMS.history;
-    while (this.undoStack.length > 1 && (this.undoStack.length > maxSteps || this.totalBytes > budgetBytes)) {
-      const dropped = this.undoStack.shift() as Step;
-      this.totalBytes -= dropped.bytes;
-      this.base = dropped.content;
+    while (this.undoStack.length > Math.max(1, maxSteps)) this.dropOldest();
+    if (this.budget) {
+      this.budget.trim();
+      return;
     }
+    while (this.undoStack.length > 1 && this.totalBytes > budgetBytes) this.dropOldest();
   }
 
   private sync(): void {

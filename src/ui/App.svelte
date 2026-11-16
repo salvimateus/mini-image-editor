@@ -162,7 +162,13 @@
     let unguard: (() => void) | null = null;
     guardWindowClose(
       () => app.anyDirty,
-      () => app.confirm(t('chrome.quit.title'), t('chrome.quit.body'), t('chrome.quit.confirm')),
+      () => {
+        // Show one of the images that can be lost, as a tab close does.
+        const dirty = app.docs.filter((doc) => doc.history.dirty);
+        if (!app.doc?.history.dirty && dirty[0]) app.selectDocument(dirty[0]);
+        const body = dirty.length > 1 ? t('chrome.quit.bodyMany', { count: dirty.length }) : t('chrome.quit.body');
+        return app.confirm(t('chrome.quit.title'), body, t('chrome.quit.confirm'));
+      },
     )
       .then((cleanup) => {
         if (disposed) cleanup();

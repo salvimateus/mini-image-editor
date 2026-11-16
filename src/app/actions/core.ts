@@ -44,11 +44,15 @@ async function resetSettings(): Promise<void> {
 /** The actions of the chrome: files, history, tools, view and colors. */
 export const coreActions: ActionHandlers<CoreActionId> = {
   'file.open': () => {
+    // Synchronous, so the file picker still runs inside the user gesture.
+    if (!app.canOpenDocument()) return;
     void pickImageFiles().then((files) => {
       if (files.length > 0) void app.openFiles(files, 'document');
     });
   },
-  'file.new': () => app.openDialog('new-image'),
+  'file.new': () => {
+    if (app.canOpenDocument()) app.openDialog('new-image');
+  },
   'file.close': () => void app.closeDocument(),
   'edit.undo': () => app.undo(),
   'edit.redo': () => app.redo(),

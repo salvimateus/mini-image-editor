@@ -141,6 +141,7 @@ export const ptBR = {
   'chrome.resetSettings.done': 'As opções voltaram ao padrão.',
   'chrome.quit.title': 'Fechar o Mini Image Editor?',
   'chrome.quit.body': 'A imagem tem alterações não exportadas. Se fechar, elas vão se perder.',
+  'chrome.quit.bodyMany': '{count} imagens têm alterações não exportadas. Se fechar, elas vão se perder.',
   'chrome.quit.confirm': 'Fechar sem exportar',
 
   'chrome.undone': 'Desfeito: {label}',
@@ -338,6 +339,7 @@ export const en: Record<keyof typeof ptBR, string> = {
   'chrome.resetSettings.done': 'The options are back to their defaults.',
   'chrome.quit.title': 'Close Mini Image Editor?',
   'chrome.quit.body': 'The image has changes that are not exported. If you close, they will be lost.',
+  'chrome.quit.bodyMany': '{count} images have changes that are not exported. If you close, they will be lost.',
   'chrome.quit.confirm': 'Close without exporting',
 
   'chrome.undone': 'Undone: {label}',

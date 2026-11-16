@@ -1,18 +1,22 @@
 <script lang="ts">
   import Plus from '@lucide/svelte/icons/plus';
   import X from '@lucide/svelte/icons/x';
+  import { tick } from 'svelte';
   import { runAction } from '../app/actions/index.ts';
   import type { EditorDoc } from '../app/doc.svelte.ts';
   import { t } from '../app/i18n/index.ts';
   import { app } from '../app/state.svelte.ts';
+  import { PARAMS } from '../core/params/index.ts';
   import { tooltip } from './base/tooltip.ts';
 
+  let bar: HTMLDivElement;
   let strip: HTMLDivElement;
   /** The tab that holds the keyboard focus stop: the arrows move it, Enter selects it. */
   let focusDoc = $state.raw<EditorDoc | null>(null);
   const tabs = new Map<EditorDoc, HTMLButtonElement>();
 
   const stopDoc = $derived(focusDoc && app.docs.includes(focusDoc) ? focusDoc : app.doc);
+  const openText = $derived(app.canOpenTab ? t('chrome.tabs.open') : t('toast.tabLimit', { max: PARAMS.limits.maxDocuments }));
 
   function register(node: HTMLButtonElement, doc: EditorDoc) {
     tabs.set(doc, node);
@@ -30,10 +34,26 @@
     if (node) reveal(node);
   }
 
+  /**
+   * Closes the tab of `doc`. When the focus was in the tab bar, or the close took it away, it goes to the tab that
+   * became active, or to the main button of the welcome screen when no tab is left.
+   */
+  async function closeTab(doc: EditorDoc): Promise<void> {
+    const hadFocus = bar.contains(document.activeElement);
+    if (!(await app.closeDocument(doc))) return;
+    await tick();
+    const active = document.activeElement;
+    if (!hadFocus && active && active !== document.body && active.isConnected) return;
+    if (app.doc) focusTab(app.doc);
+    else document.querySelector<HTMLElement>('.welcome .btn-primary')?.focus();
+  }
+
   /** Scrolls the strip only, so the page itself never moves. */
   function reveal(node: HTMLElement): void {
-    const left = node.offsetLeft;
-    const right = left + node.offsetWidth;
+    // Measure the whole `.tab`: it is positioned, so the button's own offsetLeft is always 0.
+    const tab = node.parentElement ?? node;
+    const left = tab.offsetLeft;
+    const right = left + tab.offsetWidth;
     if (left < strip.scrollLeft) strip.scrollLeft = left;
     else if (right > strip.scrollLeft + strip.clientWidth) strip.scrollLeft = right - strip.clientWidth;
   }
@@ -48,7 +68,7 @@
     else if (event.key === 'End') next = docs[docs.length - 1];
     else if (event.key === 'Delete') {
       event.preventDefault();
-      void app.closeDocument(doc);
+      void closeTab(doc);
       return;
     }
     if (!next) return;
@@ -59,7 +79,7 @@
   function onTabAuxClick(event: MouseEvent, doc: EditorDoc): void {
     if (event.button !== 1) return;
     event.preventDefault();
-    void app.closeDocument(doc);
+    void closeTab(doc);
   }
 
   /** A vertical wheel scrolls the strip sideways. */
@@ -77,7 +97,7 @@
   });
 </script>
 
-<div class="tabbar">
+<div class="tabbar" bind:this={bar}>
   <div class="tabs" role="tablist" aria-label={t('chrome.tabs.label')} bind:this={strip} onwheel={onWheel}>
     {#each app.docs as doc (doc)}
       {@const active = doc === app.doc}
@@ -100,20 +120,30 @@
           <span class="tab-name">{doc.name}</span>
           {#if doc.history.dirty}<span class="tab-dirty" role="img" aria-label={t('chrome.dirty')} use:tooltip={{ text: t('chrome.dirty') }}></span>{/if}
         </button>
+        <!-- Out of the accessibility tree, so the tablist owns only tabs; Delete on a tab is the keyboard path. -->
         <button
           type="button"
           class="tab-close"
           tabindex="-1"
-          aria-label={closeLabel}
+          aria-hidden="true"
           use:tooltip={{ text: closeLabel }}
-          onclick={() => void app.closeDocument(doc)}
+          onmousedown={(event) => event.preventDefault()}
+          onclick={() => void closeTab(doc)}
         >
           <X size={14} strokeWidth={2.75} />
         </button>
       </div>
     {/each}
   </div>
-  <button type="button" class="icon-btn tab-open" aria-label={t('chrome.tabs.open')} use:tooltip={{ text: t('chrome.tabs.open') }} onclick={() => runAction('file.open', 'pointer')}>
+  <!-- aria-disabled, not disabled: a disabled button gets no hover, so the tooltip with the limit would not show. -->
+  <button
+    type="button"
+    class="icon-btn tab-open"
+    aria-label={openText}
+    aria-disabled={!app.canOpenTab}
+    use:tooltip={{ text: openText }}
+    onclick={() => runAction('file.open', 'pointer')}
+  >
     <Plus size={18} strokeWidth={2.5} />
   </button>
 </div>
@@ -240,6 +270,18 @@
       align-self: center;
       width: 32px;
       height: 32px;
+
+      &[aria-disabled='true'] {
+        cursor: not-allowed;
+        opacity: 0.35;
+
+        &:hover,
+        &:active {
+          color: var(--text-muted);
+          background: transparent;
+          transform: none;
+        }
+      }
     }
 
     @keyframes dirty-in {

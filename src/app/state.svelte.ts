@@ -10,6 +10,7 @@ import { track } from './analytics.ts';
 import { EditorDoc } from './doc.svelte.ts';
 import { ImageEngine } from './engine.ts';
 import { cleanBaseName } from './file-name.ts';
+import { HistoryBudget } from './history.svelte.ts';
 import { t } from './i18n/index.ts';
 import { lastGrid } from './last-used.ts';
 import { createRasterLayer, createSvgLayer } from './layers.ts';
@@ -205,6 +206,8 @@ class AppState {
   /** The active document, one of `docs`; null shows the welcome screen. */
   doc = $state.raw<EditorDoc | null>(null);
   readonly engine = new ImageEngine();
+  /** One history memory budget for all open tabs. */
+  private readonly historyBudget = new HistoryBudget();
   tool = $state<ToolId>('move');
   fg = $state.raw<Rgba>(BLACK);
   bg = $state.raw<Rgba>(WHITE);
@@ -506,11 +509,15 @@ class AppState {
     return this.confirm(t('chrome.discard.title'), t('chrome.discard.body'), t('chrome.discard.confirm'));
   }
 
+  /** One more document stays inside the tab limit. */
+  get canOpenTab(): boolean {
+    return this.docs.length < PARAMS.limits.maxDocuments;
+  }
+
   /** False, with a note, when one more document would pass the tab limit. */
-  private canOpenDocument(): boolean {
-    const max = PARAMS.limits.maxDocuments;
-    if (this.docs.length < max) return true;
-    this.refuse(t('toast.tabLimit', { max }));
+  canOpenDocument(): boolean {
+    if (this.canOpenTab) return true;
+    this.refuse(t('toast.tabLimit', { max: PARAMS.limits.maxDocuments }));
     return false;
   }
 
@@ -530,6 +537,7 @@ class AppState {
     // A new document starts with the grid of the last one.
     doc.setGrid(lastGrid());
     this.docs = [...this.docs, doc];
+    this.historyBudget.add(doc.history);
     this.setDocument(doc);
   }
 
@@ -690,6 +698,7 @@ class AppState {
     if (index < 0) return true;
     const rest = this.docs.filter((open) => open !== doc);
     this.docs = rest;
+    this.historyBudget.remove(doc.history);
     if (doc === this.doc) this.setDocument(rest[index] ?? rest[index - 1] ?? null);
     return true;
   }
