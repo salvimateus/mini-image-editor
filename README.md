@@ -101,7 +101,7 @@ The six color themes.
 - Layers panel: thumbnail, visibility, opacity, rename, drag to reorder, new, duplicate, delete and merge down.
 - A dropped, pasted or added image becomes a new layer. An image larger than the canvas is fitted inside it.
 - Move tool: drag a layer, or push an arrow key to move it 1 px (10 px with Shift).
-- Select more than one layer in the Layers panel: Ctrl+click (Cmd+click on macOS) adds or removes a layer, and Shift+click selects a range. The move tool moves all the selected layers together, with a drag or with the arrow keys, in one undo step. The other actions operate only on the active layer. The vignette and the frame do not move with the other layers.
+- Select more than one layer in the Layers panel: Ctrl+click (Cmd+click on macOS) adds or removes a layer, and Shift+click selects a range. The move tool moves all the selected layers together, with a drag or with the arrow keys, in one undo step. The align buttons also operate on all the selected layers, in one undo step: with "Bottom layer", each layer aligns to the bottom selected layer, which does not move; with "Canvas", each layer aligns to the canvas. The other actions operate only on the active layer. The vignette and the frame do not move with the other layers.
 - Resize a layer with handles. The resize is proportional; hold Shift to resize freely.
 - Align a layer to the canvas: left, center, right, top, middle or bottom. The alignment uses the visible pixels of the layer.
 
@@ -369,7 +369,7 @@ Size limits: 16384 px for each side and 50 megapixels for an image. WebP permits
 
 ## Status
 
-- Version 0.4.1.
+- Version 0.5.0.
 - The Windows exe is the main target. The Linux build is prepared, but not tested.
 - Get the Windows exe of each version from the [releases page](https://github.com/salvimateus/mini-image-editor/releases/latest).
 - Use the web version in your browser at [mini-image-editor-mu.vercel.app](https://mini-image-editor-mu.vercel.app). Each change on `main` updates it.
