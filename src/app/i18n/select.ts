@@ -42,10 +42,13 @@ export const ptBR = {
   'select.bar.none': 'Desmarcar',
 
   'select.align.bar': 'Alinhar a camada',
+  'select.align.barGroup': 'Alinhar as camadas',
   'select.align.relativeTo': 'Alinhar relativo a:',
   'select.align.ref.menu': 'Referência do alinhamento',
   'select.align.ref.auto': 'Automático',
   'select.align.ref.below': 'Camada abaixo',
+  'select.align.ref.bottom': 'Camada de baixo',
+  'select.align.ref.bottomNamed': 'Camada de baixo: {name}',
   'select.align.ref.stage': 'Tela',
   'select.align.ref.pick': 'Escolher na tela…',
   'select.align.ref.none': 'Nenhuma',
@@ -97,6 +100,7 @@ export const ptBR = {
   'select.toast.generated': 'Esta camada se ajusta sozinha à tela, então não dá para redimensioná-la.',
   'select.toast.shapeHandles': 'Use as alças da forma para mudar o tamanho dela.',
   'select.toast.emptyLayer': 'Esta camada está vazia.',
+  'select.toast.emptyLayers': 'As camadas selecionadas estão vazias.',
   'select.toast.noLayer': 'Não há camada ativa.',
   'select.toast.wandHidden': 'A camada ativa está oculta. Mostre a camada para selecionar nela.',
 
@@ -111,6 +115,7 @@ export const ptBR = {
   'select.history.mergeDown': 'Mesclar camadas',
   'select.history.duplicate': 'Duplicar camada',
   'select.history.align': 'Alinhar camada',
+  'select.history.alignGroup': 'Alinhar camadas',
 } as const;
 
 export const en: Record<keyof typeof ptBR, string> = {
@@ -156,10 +161,13 @@ export const en: Record<keyof typeof ptBR, string> = {
   'select.bar.none': 'Deselect',
 
   'select.align.bar': 'Align the layer',
+  'select.align.barGroup': 'Align the layers',
   'select.align.relativeTo': 'Align relative to:',
   'select.align.ref.menu': 'Align reference',
   'select.align.ref.auto': 'Automatic',
   'select.align.ref.below': 'Layer below',
+  'select.align.ref.bottom': 'Bottom layer',
+  'select.align.ref.bottomNamed': 'Bottom layer: {name}',
   'select.align.ref.stage': 'Canvas',
   'select.align.ref.pick': 'Pick on the canvas…',
   'select.align.ref.none': 'None',
@@ -211,6 +219,7 @@ export const en: Record<keyof typeof ptBR, string> = {
   'select.toast.generated': 'This layer fits the canvas by itself, so it cannot be resized.',
   'select.toast.shapeHandles': 'Use the handles of the shape to change its size.',
   'select.toast.emptyLayer': 'This layer is empty.',
+  'select.toast.emptyLayers': 'The selected layers are empty.',
   'select.toast.noLayer': 'There is no active layer.',
   'select.toast.wandHidden': 'The active layer is hidden. Show the layer to select in it.',
 
@@ -225,4 +234,5 @@ export const en: Record<keyof typeof ptBR, string> = {
   'select.history.mergeDown': 'Merge layers',
   'select.history.duplicate': 'Duplicate layer',
   'select.history.align': 'Align layer',
+  'select.history.alignGroup': 'Align layers',
 };

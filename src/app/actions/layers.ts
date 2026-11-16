@@ -1,8 +1,10 @@
 import { flatten } from '../../core/composite.ts';
 import { createRaster, unionRect } from '../../core/raster.ts';
-import { alignTarget, noteAligned } from '../align-reference.svelte.ts';
+import type { Point, Rect } from '../../core/types.ts';
+import { alignGroup, alignTarget, noteAligned } from '../align-reference.svelte.ts';
+import type { EditorDoc } from '../doc.svelte.ts';
 import { t, type TextKey } from '../i18n/index.ts';
-import { createRasterLayer, duplicateLayer, layerRect } from '../layers.ts';
+import { createRasterLayer, duplicateLayer, layerRect, type Layer } from '../layers.ts';
 import * as sfx from '../sfx.ts';
 import { app } from '../state.svelte.ts';
 import { applyTransform, cancelTransform, layerBounds, startTransform, transformBox } from '../tools/move.ts';
@@ -15,26 +17,59 @@ function hint(key: TextKey): void {
 
 type Edge = 'left' | 'centerH' | 'right' | 'top' | 'centerV' | 'bottom';
 
-/** Moves the active layer so that its visible bounds touch an edge or the center of the align reference. */
+/** The whole-px offset that puts the bounds `b` on an edge or the center of `r`. */
+function alignOffset(edge: Edge, b: Rect, r: Rect): Point {
+  let dx = 0;
+  let dy = 0;
+  if (edge === 'left') dx = r.x - b.x;
+  else if (edge === 'centerH') dx = Math.round(r.x + (r.w - b.w) / 2) - b.x;
+  else if (edge === 'right') dx = r.x + r.w - (b.x + b.w);
+  else if (edge === 'top') dy = r.y - b.y;
+  else if (edge === 'centerV') dy = Math.round(r.y + (r.h - b.h) / 2) - b.y;
+  else dy = r.y + r.h - (b.y + b.h);
+  return { x: dx, y: dy };
+}
+
+/** Aligns each layer of the group with visible bounds to the reference (the bottom layer, which stays, or the stage), in one undo step. */
+function alignGroupTo(doc: EditorDoc, group: readonly Layer[], edge: Edge): void {
+  const target = alignTarget(doc);
+  const moves: { id: number; offset: Point }[] = [];
+  let counted = 0;
+  for (const layer of group) {
+    const b = layerBounds(doc, layer);
+    if (!b) continue;
+    counted += 1;
+    if (layer.id === target.layerId) continue;
+    const offset = alignOffset(edge, b, target.rect);
+    if (offset.x !== 0 || offset.y !== 0) moves.push({ id: layer.id, offset });
+  }
+  if (counted === 0) return hint('select.toast.emptyLayers');
+  if (moves.length > 0) {
+    doc.batch('select.history.alignGroup', () => {
+      for (const { id, offset } of moves) {
+        const layer = doc.layer(id);
+        if (layer) doc.setLayerProps(id, { x: layer.x + offset.x, y: layer.y + offset.y });
+      }
+    });
+  }
+  noteAligned(doc, target);
+  sfx.play('tick');
+}
+
+/** Moves the active layer (or each layer of a multi-selection) so that its visible bounds touch an edge or the center of the align reference. */
 function align(edge: Edge): ActionHandler {
   return () => {
     const doc = app.doc;
     if (!doc) return;
     cancelTransform(true);
+    const group = alignGroup(doc);
+    if (group) return alignGroupTo(doc, group, edge);
     const layer = doc.active;
     if (!layer) return hint('select.toast.noLayer');
     const b = layerBounds(doc, layer);
     if (!b) return hint('select.toast.emptyLayer');
     const target = alignTarget(doc);
-    const r = target.rect;
-    let dx = 0;
-    let dy = 0;
-    if (edge === 'left') dx = r.x - b.x;
-    else if (edge === 'centerH') dx = Math.round(r.x + (r.w - b.w) / 2) - b.x;
-    else if (edge === 'right') dx = r.x + r.w - (b.x + b.w);
-    else if (edge === 'top') dy = r.y - b.y;
-    else if (edge === 'centerV') dy = Math.round(r.y + (r.h - b.h) / 2) - b.y;
-    else dy = r.y + r.h - (b.y + b.h);
+    const { x: dx, y: dy } = alignOffset(edge, b, target.rect);
     if (dx !== 0 || dy !== 0) doc.batch('select.history.align', () => doc.setLayerProps(layer.id, { x: layer.x + dx, y: layer.y + dy }));
     noteAligned(doc, target);
     sfx.play('tick');

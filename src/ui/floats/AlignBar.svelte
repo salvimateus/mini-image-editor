@@ -12,7 +12,10 @@
   import Sparkles from '@lucide/svelte/icons/sparkles';
   import { untrack } from 'svelte';
   import { runAction } from '../../app/actions/index.ts';
+  import { unionRect } from '../../core/raster.ts';
+  import type { Rect } from '../../core/types.ts';
   import {
+    alignGroup,
     alignPicking,
     alignRefMode,
     alignTarget,
@@ -61,16 +64,32 @@
 
   const shown = $derived(app.tool === 'move' && !$stageDragging && !$transformOn);
 
-  /** Above the visible bounds of the active layer, centered; below them when there is no room above. */
+  /** The layers that an align moves together, or null for the active layer alone. */
+  const group = $derived(app.doc ? alignGroup(app.doc) : null);
+
+  /** The visible bounds that the bar follows: the active layer, or the union of the visible layers of the group. */
+  const anchor = $derived.by((): Rect | null => {
+    const doc = app.doc;
+    if (!doc) return null;
+    if (!group) {
+      const layer = doc.active;
+      return layer && layer.visible ? layerBounds(doc, layer) : null;
+    }
+    let rect: Rect | null = null;
+    for (const layer of group) {
+      const b = layer.visible ? layerBounds(doc, layer) : null;
+      if (b) rect = unionRect(rect, b);
+    }
+    return rect;
+  });
+
+  /** Above the anchor bounds, centered; below them when there is no room above. */
   const pos = $derived.by(() => {
     if (!shown) return null;
     void app.viewTick;
     const stage = app.stage;
-    const doc = app.doc;
-    const layer = doc?.active;
-    if (!stage || !doc || !layer || !layer.visible) return null;
-    const b = layerBounds(doc, layer);
-    if (!b) return null;
+    const b = anchor;
+    if (!stage || !b) return null;
     const { gapPx, edgePx } = TUNING.select.bar;
     const top = stage.docToScreen(b.x + b.w / 2, b.y);
     const bottom = stage.docToScreen(b.x + b.w / 2, b.y + b.h);
@@ -91,6 +110,10 @@
     if (picking) return t('select.align.ref.picking');
     if (!doc) return '';
     if (mode === 'stage') return t('select.align.ref.stage');
+    if (group) {
+      const target = alignTarget(doc);
+      return target.layerId === null ? target.name : t('select.align.ref.bottomNamed', { name: target.name });
+    }
     if (mode === 'below' && alignTargetOf(doc, 'below')) return t('select.align.ref.below');
     return alignTarget(doc).name;
   });
@@ -99,6 +122,13 @@
   const entries = $derived.by((): RefEntry[] => {
     const doc = app.doc;
     const open = menuOpen && doc;
+    if (group) {
+      const base = open ? alignTargetOf(doc, 'below') : null;
+      return [
+        { id: 'below', label: t('select.align.ref.bottom'), detail: open ? (base?.name ?? t('select.align.ref.none')) : null, disabled: open ? !base : false },
+        { id: 'stage', label: t('select.align.ref.stage'), detail: null, disabled: false },
+      ];
+    }
     const below = open ? alignTargetOf(doc, 'below') : null;
     return [
       { id: 'auto', label: t('select.align.ref.auto'), detail: open ? (alignTargetOf(doc, 'auto')?.name ?? null) : null, disabled: false },
@@ -156,7 +186,7 @@
     class="align-bar"
     role="toolbar"
     tabindex="-1"
-    aria-label={t('select.align.bar')}
+    aria-label={t(group ? 'select.align.barGroup' : 'select.align.bar')}
     style:translate="{pos.x}px {pos.y}px"
     bind:offsetWidth={barW}
     bind:offsetHeight={barH}
@@ -273,7 +303,7 @@
     }
 
     .align-chip-text {
-      max-width: 160px;
+      max-width: 220px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;

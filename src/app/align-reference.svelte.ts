@@ -1,3 +1,4 @@
+import { untrack } from 'svelte';
 import { fromStore, get } from 'svelte/store';
 import type { Rect } from '../core/types.ts';
 import type { StagePointer } from '../ui/stage-renderer.ts';
@@ -7,7 +8,7 @@ import type { Layer } from './layers.ts';
 import * as sfx from './sfx.ts';
 import { app } from './state.svelte.ts';
 import { selectSettings, setSelectSettings, type StoredAlignRef } from './tools/marquee-rect.ts';
-import { layerAt, layerBounds, visibleLayerBoxes, type LayerBox } from './tools/move.ts';
+import { layerAt, layerBounds, moveGroup, visibleLayerBoxes, type LayerBox } from './tools/move.ts';
 
 // The reference of the six align actions: the stage, or a layer that the mode resolves to. The bar, the overlay and
 // the actions read it from here, so the chip always names the object that an align uses.
@@ -111,22 +112,43 @@ function pickedTarget(doc: EditorDoc): AlignTarget | null {
   return box ? targetOf(box) : null;
 }
 
-/** The mode that applies now: a layer picked on the stage, else the stored mode. */
+/**
+ * The layers that an align moves together (the group of a Move drag), or null when one layer aligns alone. A group
+ * aligns to its bottom layer (`below`) or to the stage (`stage`); the other modes do not apply to it.
+ */
+export function alignGroup(doc: EditorDoc): readonly Layer[] | null {
+  return moveGroup(doc);
+}
+
+/** The reference of a group: the bottom layer of the group that has visible bounds, or null when none has. */
+export function groupBaseTarget(doc: EditorDoc, group: readonly Layer[]): AlignTarget | null {
+  for (const layer of group) {
+    const bounds = layerBounds(doc, layer);
+    if (bounds) return { layerId: layer.id, name: layer.name, rect: bounds };
+  }
+  return null;
+}
+
+/** The mode that applies now: `stage` or `below` for a group, else a layer picked on the stage, else the stored mode. */
 export function alignRefMode(): AlignRefMode {
+  const doc = app.doc;
+  if (doc && alignGroup(doc)) return settings.current.alignRef === 'stage' ? 'stage' : 'below';
   return picked && picked.doc === app.doc && app.doc?.layer(picked.id) ? 'pick' : settings.current.alignRef;
 }
 
 /** The reference of one mode; null when `below` or `pick` cannot resolve now. */
 export function alignTargetOf(doc: EditorDoc, mode: AlignRefMode): AlignTarget | null {
   if (mode === 'stage') return stageTarget(doc);
+  const group = alignGroup(doc);
+  if (group) return groupBaseTarget(doc, group);
   if (mode === 'below') return belowTarget(doc);
   if (mode === 'pick') return pickedTarget(doc);
   return autoTarget(doc);
 }
 
-/** The reference that an align uses now. A mode that cannot resolve gives what `auto` gives. */
+/** The reference that an align uses now. A mode that cannot resolve gives what `auto` gives (the stage for a group). */
 export function alignTarget(doc: EditorDoc): AlignTarget {
-  return alignTargetOf(doc, alignRefMode()) ?? autoTarget(doc);
+  return alignTargetOf(doc, alignRefMode()) ?? (alignGroup(doc) ? stageTarget(doc) : autoTarget(doc));
 }
 
 /** The name of the layer that `pick` holds (it can be hidden or empty now), or null. */
@@ -226,6 +248,11 @@ $effect.root(() => {
   // A pick that another part of the app replaced, or that a new document cleared, is over.
   $effect(() => {
     if (pickHandler && app.stagePick !== pickHandler) endPick();
+  });
+  // A group has no pick: an armed pick ends when the selection becomes a group.
+  $effect(() => {
+    const doc = app.doc;
+    if (pickHandler && doc && alignGroup(doc)) untrack(cancelAlignPick);
   });
   // A picked layer that is removed, or a different document, ends the pick.
   $effect(() => {
