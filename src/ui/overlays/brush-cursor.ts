@@ -1,11 +1,10 @@
-import { app, brushShape, type BrushToolId } from '../../app/state.svelte.ts';
+import { app, BRUSH_TOOLS, brushShape, type BrushToolId } from '../../app/state.svelte.ts';
 import { TUNING } from '../../app/tuning/index.ts';
 import { PARAMS } from '../../core/params/index.ts';
 import type { Point } from '../../core/types.ts';
 import { snap, STAGE_COLORS, type StageHost } from '../stage-renderer.ts';
 import type { SceneOverlay } from './types.ts';
 
-const BRUSH_TOOLS: ReadonlySet<string> = new Set<BrushToolId>(['brush', 'pencil', 'eraser', 'clone', 'sketch']);
 const LABEL_FONT = "800 12px 'Nunito Variable', 'Nunito', system-ui, sans-serif";
 
 /** The pointer in document px, or null when it is off the stage. */
@@ -39,7 +38,7 @@ export function flashBrush(text: string): void {
 }
 
 function activeBrush(): BrushToolId | null {
-  return BRUSH_TOOLS.has(app.tool) ? (app.tool as BrushToolId) : null;
+  return BRUSH_TOOLS.includes(app.tool as BrushToolId) ? (app.tool as BrushToolId) : null;
 }
 
 function cross(fx: CanvasRenderingContext2D, x: number, y: number, arm: number): void {

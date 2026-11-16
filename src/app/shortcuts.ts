@@ -9,6 +9,7 @@ export type ActionId =
   | 'edit.undo'
   | 'edit.redo'
   | 'edit.copy'
+  | 'edit.copyImage'
   | 'edit.cut'
   | 'edit.paste'
   | `tool.${ToolId}`
@@ -87,6 +88,7 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   { id: 'edit.undo', combos: [ctrl('z')], label: 'action.edit.undo', group: 'edit' },
   { id: 'edit.redo', combos: [ctrl('z', { shift: true }), ctrl('y')], label: 'action.edit.redo', group: 'edit' },
   { id: 'edit.copy', combos: [ctrl('c')], label: 'action.edit.copy', group: 'edit' },
+  { id: 'edit.copyImage', combos: [ctrl('c', { shift: true })], label: 'action.edit.copyImage', group: 'edit' },
   { id: 'edit.cut', combos: [ctrl('x')], label: 'action.edit.cut', group: 'edit' },
   { id: 'edit.paste', combos: [ctrl('v')], label: 'action.edit.paste', group: 'edit', browserEvent: true },
 
@@ -100,6 +102,7 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   { id: 'tool.brush', combos: [key('b')], label: 'chrome.tool.brush', group: 'tools' },
   { id: 'tool.pencil', combos: [key('p')], label: 'chrome.tool.pencil', group: 'tools' },
   { id: 'tool.sketch', combos: [key('y')], label: 'chrome.tool.sketch', group: 'tools' },
+  { id: 'tool.highlighter', combos: [key('k')], label: 'chrome.tool.highlighter', group: 'tools' },
   { id: 'tool.eraser', combos: [key('e')], label: 'chrome.tool.eraser', group: 'tools' },
   { id: 'tool.bucket', combos: [key('g')], label: 'chrome.tool.bucket', group: 'tools' },
   { id: 'tool.clone', combos: [key('s')], label: 'chrome.tool.clone', group: 'tools' },

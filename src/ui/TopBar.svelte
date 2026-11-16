@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ClipboardCopy from '@lucide/svelte/icons/clipboard-copy';
   import Download from '@lucide/svelte/icons/download';
   import Redo2 from '@lucide/svelte/icons/redo-2';
   import Undo2 from '@lucide/svelte/icons/undo-2';
@@ -16,7 +17,7 @@
 
   const MENUS: readonly { id: string; label: TextKey; items: readonly (ActionId | null)[] }[] = [
     { id: 'file', label: 'menu.file', items: ['file.new', 'file.open', null, 'layer.addImage', null, 'file.export', null, 'file.close'] },
-    { id: 'edit', label: 'menu.edit', items: ['edit.undo', 'edit.redo', null, 'edit.cut', 'edit.copy', 'edit.paste'] },
+    { id: 'edit', label: 'menu.edit', items: ['edit.undo', 'edit.redo', null, 'edit.cut', 'edit.copy', 'edit.copyImage', 'edit.paste'] },
     { id: 'image', label: 'menu.image', items: ['image.canvasSize', 'image.imageSize', null, 'tool.crop'] },
     { id: 'adjust', label: 'menu.adjust', items: ['adjust.hueSaturation', 'adjust.levels', 'adjust.sharpen', 'adjust.vignette', null, 'adjust.frame'] },
     {
@@ -68,9 +69,6 @@
   let openMenu = $state<string | null>(null);
   let bar: HTMLDivElement;
 
-  const doc = $derived(app.doc);
-  const dirty = $derived(doc?.history.dirty ?? false);
-
   function onWindowPointer(event: PointerEvent): void {
     if (openMenu && !bar.contains(event.target as Node)) openMenu = null;
   }
@@ -99,13 +97,6 @@
         onclose={() => (openMenu = null)}
       />
     {/each}
-  </div>
-
-  <div class="doc">
-    {#if doc}
-      <span class="doc-name selectable" title={doc.name}>{doc.name}</span>
-      {#if dirty}<span class="doc-dirty" role="img" aria-label={t('chrome.dirty')} use:tooltip={{ text: t('chrome.dirty') }}></span>{/if}
-    {/if}
   </div>
 
   <div class="actions">
@@ -143,6 +134,17 @@
     <ThemePicker inBar />
     <button
       type="button"
+      class="btn copy-image"
+      aria-label={t('action.edit.copyImage')}
+      disabled={!actionEnabled('edit.copyImage')}
+      use:tooltip={{ text: t('action.edit.copyImage'), keys: keyLabels('edit.copyImage') }}
+      onclick={() => runAction('edit.copyImage', 'pointer')}
+    >
+      <ClipboardCopy size={18} strokeWidth={2.5} />
+      <span class="copy-image-label">{t('chrome.copyImage')}</span>
+    </button>
+    <button
+      type="button"
       class="btn btn-primary export"
       disabled={!actionEnabled('file.export')}
       use:tooltip={{ text: t('action.file.export'), keys: keyLabels('file.export') }}
@@ -158,7 +160,7 @@
   @layer components {
     .topbar {
       display: grid;
-      grid-template-columns: auto auto minmax(0, 1fr) auto;
+      grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
       gap: var(--space-2);
       height: var(--header-h);
@@ -176,40 +178,18 @@
       gap: 2px;
     }
 
-    .doc {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--space-2);
-      min-width: 0;
-    }
-
-    .doc-name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-weight: 800;
-      color: var(--text-muted);
-    }
-
-    .doc-dirty {
-      flex: none;
-      width: 9px;
-      height: 9px;
-      background: var(--yellow);
-      border-radius: var(--radius-pill);
-      box-shadow: 0 0 0 3px color-mix(in oklch, var(--yellow) 18%, transparent);
-      animation: dirty-in var(--dur-pop) var(--ease-spring);
-    }
-
     .actions {
       display: flex;
       align-items: center;
       gap: var(--space-1);
     }
 
+    .copy-image,
     .export {
       min-height: 36px;
+    }
+
+    .copy-image {
       margin-left: var(--space-2);
     }
 
@@ -224,15 +204,24 @@
         height: 34px;
       }
 
+      .copy-image,
       .export {
         padding: 0 var(--space-3);
+      }
+
+      .copy-image {
         margin-left: var(--space-1);
       }
     }
 
-    @keyframes dirty-in {
-      from {
-        scale: 0;
+    /* The label goes before the menus run out of room; the icon, the tooltip and the accessible name stay. */
+    @media (max-width: 1060px) {
+      .copy-image {
+        padding: 0 var(--space-2);
+      }
+
+      .copy-image-label {
+        display: none;
       }
     }
   }

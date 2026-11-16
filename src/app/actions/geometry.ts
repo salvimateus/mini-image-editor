@@ -52,7 +52,7 @@ export async function applyStageRect(doc: EditorDoc, rect: Rect, fill: Rgba | nu
   const problem = stageSizeProblem(r.w, r.h);
   if (problem) throw new CoreError('too-large', problem);
   const putGenerated = await app.track(prepareGenerators(doc, r.w, r.h));
-  if (app.doc !== doc) return false;
+  if (!app.isOpen(doc)) return false;
   doc.batch(label, () => {
     doc.setStage(r, fill, label);
     putGenerated();

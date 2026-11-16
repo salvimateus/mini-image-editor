@@ -2,7 +2,7 @@ import type { EditorDoc, LayerPreview } from '../app/doc.svelte.ts';
 import type { Layer } from '../app/layers.ts';
 import { TUNING } from '../app/tuning/index.ts';
 import type { Rect } from '../core/types.ts';
-import type { Camera } from './camera.ts';
+import type { Camera, CameraView } from './camera.ts';
 import { LayerViews, type ImageView } from './layer-views.ts';
 import { OVERLAYS } from './overlays/index.ts';
 import { checkerPattern, contentRect, drawFrameEdge, drawFrameShadow, type Scene, type StageHost } from './stage-renderer.ts';
@@ -14,6 +14,9 @@ interface VisibleDoc {
   x1: number;
   y1: number;
 }
+
+/** The view of each document while another tab shows; a scene lives only while its document shows. */
+const savedViews = new WeakMap<EditorDoc, CameraView>();
 
 /**
  * The stage of one document: the checkerboard, the visible layers clipped to the stage, the live preview of an
@@ -44,6 +47,18 @@ export class EditorScene implements Scene {
 
   initialZoom(camera: Camera): number {
     return Math.min(camera.fitZoom(), TUNING.stage.zoom.fitMax);
+  }
+
+  saveView(camera: Camera): void {
+    savedViews.set(this.doc, camera.saveView());
+  }
+
+  restoreView(camera: Camera): boolean {
+    const view = savedViews.get(this.doc);
+    if (!view) return false;
+    savedViews.delete(this.doc);
+    camera.restoreView(view);
+    return true;
   }
 
   attach(host: StageHost | null): void {

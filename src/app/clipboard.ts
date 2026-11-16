@@ -54,13 +54,23 @@ function pngBlob(image: RasterImage): Promise<Blob> {
   });
 }
 
-/** Puts the image on the system clipboard as a PNG, so that other apps can paste it. A failure is silent: the held copy still pastes in the app. */
-export function writeSystemImage(image: RasterImage): void {
-  if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) return;
+/**
+ * Puts the image on the system clipboard as a PNG, so that other apps can paste it. Resolves to false when there is no
+ * clipboard API or the write fails; it never rejects and shows no error, so the caller decides what a failure means.
+ */
+export function writeSystemImage(image: RasterImage): Promise<boolean> {
+  if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) return Promise.resolve(false);
   // The blob goes in as a promise, so the write starts inside the user gesture.
   const blob = pngBlob(image);
   blob.catch(() => {});
-  navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).catch(() => {});
+  try {
+    return navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(
+      () => true,
+      () => false,
+    );
+  } catch {
+    return Promise.resolve(false);
+  }
 }
 
 /** The first image on the system clipboard as a file (an SVG keeps its vector); empty when there is none or the read fails. */

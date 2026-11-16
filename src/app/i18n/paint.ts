@@ -1,4 +1,4 @@
-/** UI text of the paint feature: brush, pen, pencil, eraser, clone stamp, bucket, eyedropper and the Color panel. */
+/** UI text of the paint feature: brush, pen, pencil, highlighter, eraser, clone stamp, bucket, eyedropper and the Color panel. */
 export const ptBR = {
   'paint.hint.paint': 'Pintar',
   'paint.hint.pencil': 'Desenhar pixel a pixel',
@@ -13,11 +13,13 @@ export const ptBR = {
   'paint.hint.pickDrag': 'Escolher a cor com a lupa',
   'paint.hint.pickClick': 'Pegar a cor sob o ponteiro',
   'paint.hint.sketch': 'Desenhar',
+  'paint.hint.highlight': 'Grifar numa camada própria acima da atual',
   'paint.hint.pressure': 'A pressão na mesa digitalizadora muda o traço',
 
   'paint.history.brush': 'Pincel',
   'paint.history.pencil': 'Caneta',
   'paint.history.sketch': 'Lápis',
+  'paint.history.highlighter': 'Marca-texto',
   'paint.history.eraser': 'Borracha',
   'paint.history.clone': 'Carimbo',
   'paint.history.fill': 'Balde de tinta',
@@ -28,7 +30,7 @@ export const ptBR = {
   'paint.toast.nothingToFill': 'Não há nada para preencher aqui.',
   'paint.toast.outsideSelection': 'Fora da seleção. [[Ctrl+D]] desmarca.',
   'paint.toast.outside': 'Clique dentro da imagem.',
-  'paint.toast.needBrush': 'Para mudar o tamanho, escolha o pincel, a caneta, o lápis, a borracha ou o carimbo.',
+  'paint.toast.needBrush': 'Para mudar o tamanho, escolha o pincel, a caneta, o lápis, o marca-texto, a borracha ou o carimbo.',
   'paint.toast.pencilHard': 'A caneta é sempre dura.',
   'paint.toast.sketchHard': 'O lápis não tem dureza: cada textura tem a sua.',
 
@@ -63,6 +65,13 @@ export const ptBR = {
   'paint.option.sourceMissing': 'Sem origem',
   'paint.option.sourceHelp': 'Marca a origem da cópia. Também vale o clique direito.',
   'paint.option.clearSource': 'Desmarcar a origem',
+  'paint.highlightLayerName': 'Marca-texto',
+  'paint.highlight.colors': 'Cores do marca-texto',
+  'paint.highlight.yellow': 'Amarelo',
+  'paint.highlight.green': 'Verde',
+  'paint.highlight.pink': 'Rosa',
+  'paint.highlight.cyan': 'Ciano',
+  'paint.highlight.orange': 'Laranja',
 
   'paint.color.fg': 'Cor da frente',
   'paint.color.bg': 'Cor do fundo',
@@ -102,11 +111,13 @@ export const en: Record<keyof typeof ptBR, string> = {
   'paint.hint.pickDrag': 'Pick the color with the loupe',
   'paint.hint.pickClick': 'Pick the color under the pointer',
   'paint.hint.sketch': 'Draw',
+  'paint.hint.highlight': 'Highlight on its own layer above the current one',
   'paint.hint.pressure': 'Tablet pressure changes the stroke',
 
   'paint.history.brush': 'Brush',
   'paint.history.pencil': 'Pen',
   'paint.history.sketch': 'Pencil',
+  'paint.history.highlighter': 'Highlighter',
   'paint.history.eraser': 'Eraser',
   'paint.history.clone': 'Clone stamp',
   'paint.history.fill': 'Paint bucket',
@@ -117,7 +128,7 @@ export const en: Record<keyof typeof ptBR, string> = {
   'paint.toast.nothingToFill': 'Nothing to fill here.',
   'paint.toast.outsideSelection': 'Outside the selection. [[Ctrl+D]] deselects.',
   'paint.toast.outside': 'Click inside the image.',
-  'paint.toast.needBrush': 'To change the size, choose the brush, pen, pencil, eraser or clone stamp.',
+  'paint.toast.needBrush': 'To change the size, choose the brush, pen, pencil, highlighter, eraser or clone stamp.',
   'paint.toast.pencilHard': 'The pen is always hard.',
   'paint.toast.sketchHard': 'The pencil has no hardness: each texture has its own.',
 
@@ -152,6 +163,13 @@ export const en: Record<keyof typeof ptBR, string> = {
   'paint.option.sourceMissing': 'No source',
   'paint.option.sourceHelp': 'Sets the source of the copy. A right-click also works.',
   'paint.option.clearSource': 'Clear the source',
+  'paint.highlightLayerName': 'Highlight',
+  'paint.highlight.colors': 'Highlighter colors',
+  'paint.highlight.yellow': 'Yellow',
+  'paint.highlight.green': 'Green',
+  'paint.highlight.pink': 'Pink',
+  'paint.highlight.cyan': 'Cyan',
+  'paint.highlight.orange': 'Orange',
 
   'paint.color.fg': 'Foreground color',
   'paint.color.bg': 'Background color',

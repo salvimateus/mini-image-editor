@@ -6,6 +6,8 @@ export const LIMITS_PARAMS = {
   maxPixels: 50_000_000,
   /** Above this area the app warns that the work can be slow. */
   warnPixels: 25_000_000,
+  /** Most documents open at the same time, one tab each. The undo history of each one adds to the memory. */
+  maxDocuments: 8,
 } as const;
 
 /** Undo history limits. */

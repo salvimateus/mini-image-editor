@@ -39,4 +39,12 @@ export const PAINT_TUNING = {
   pickBurst: { count: 9, speed: [70, 170], life: [0.22, 0.42], size: [3, 6], jitter: 2 },
   /** Gravity of both bursts: low, so the dots float. */
   burstGravity: 260,
+  /** The swatches of the highlighter options, opaque: the tool opacity makes them translucent. */
+  highlightColors: [
+    { id: 'yellow', color: { r: 255, g: 230, b: 0, a: 255 } },
+    { id: 'green', color: { r: 92, g: 230, b: 92, a: 255 } },
+    { id: 'pink', color: { r: 255, g: 92, b: 200, a: 255 } },
+    { id: 'cyan', color: { r: 51, g: 214, b: 255, a: 255 } },
+    { id: 'orange', color: { r: 255, g: 154, b: 31, a: 255 } },
+  ],
 } as const;

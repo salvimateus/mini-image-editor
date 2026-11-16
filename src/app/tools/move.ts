@@ -166,12 +166,22 @@ function endSession(): void {
 function liveSession(): TransformSession | null {
   const s = session;
   if (!s) return null;
-  const layer = s.doc.layer(s.layerId);
-  if (app.doc !== s.doc || s.doc.preview !== s.preview || !layer || layer.image !== s.image) {
+  if (!sessionIntact(s)) {
     endSession();
     return null;
   }
+  if (app.doc !== s.doc) {
+    // An apply in progress still lands in its document, now in a background tab.
+    if (!s.busy) endSession();
+    return null;
+  }
   return s;
+}
+
+/** The document of the session is still open, and nothing changed its layer or its preview. */
+function sessionIntact(s: TransformSession): boolean {
+  const layer = s.doc.layer(s.layerId);
+  return app.isOpen(s.doc) && s.doc.preview === s.preview && !!layer && layer.image === s.image;
 }
 
 export function transformBox(): Rect | null {
@@ -182,7 +192,8 @@ export function transformBox(): Rect | null {
 export function startTransform(): void {
   const doc = app.doc;
   if (!doc) return;
-  if (liveSession()) return;
+  // One transform at a time, also while the apply of another tab still runs.
+  if (session?.busy || liveSession()) return;
   const layer = doc.active;
   if (!layer) return hint('select.toast.noLayer');
   if (layer.kind === 'raster' && layer.generator) return hint('select.toast.generated');
@@ -252,7 +263,7 @@ export async function applyTransform(): Promise<void> {
     if (layer.kind === 'text') {
       const spec = scaleTextSpec(layer.spec, box.w / origin.w);
       const image = await app.track(renderTextLayer(spec));
-      if (session !== s || !liveSession()) return;
+      if (session !== s || !sessionIntact(s)) return;
       const bounds = opaqueBounds(image);
       const at = { x: box.x - (bounds?.x ?? 0), y: box.y - (bounds?.y ?? 0) };
       endSession();
@@ -264,7 +275,7 @@ export async function applyTransform(): Promise<void> {
       // The vector renders again at the new size, so a scale never blurs it.
       const spec = scaleSvgSpec(layer.spec, box.w / origin.w, box.h / origin.h);
       const image = await app.track(renderSvgLayer(spec));
-      if (session !== s || !liveSession()) return;
+      if (session !== s || !sessionIntact(s)) return;
       const bounds = opaqueBounds(image);
       const at = { x: box.x - (bounds?.x ?? 0), y: box.y - (bounds?.y ?? 0) };
       endSession();
@@ -272,7 +283,7 @@ export async function applyTransform(): Promise<void> {
     } else if (layer.kind === 'raster') {
       const local = { x: origin.x - layer.x, y: origin.y - layer.y, w: origin.w, h: origin.h };
       const resized = await app.track(app.engine.resize(cropRaster(layer.image, local), box.w, box.h, 'auto'));
-      if (session !== s || !liveSession()) return;
+      if (session !== s || !sessionIntact(s)) return;
       endSession();
       doc.replaceImage(layer.id, resized, { x: box.x, y: box.y }, 'select.history.transform');
     } else {

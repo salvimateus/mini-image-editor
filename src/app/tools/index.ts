@@ -5,6 +5,7 @@ import { cropTool } from './crop.ts';
 import { eraserTool } from './eraser.ts';
 import { eyedropperTool } from './eyedropper.ts';
 import { handTool } from './hand.ts';
+import { highlighterTool } from './highlighter.ts';
 import { lassoTool } from './lasso.ts';
 import { marqueeEllipseTool } from './marquee-ellipse.ts';
 import { marqueeRectTool } from './marquee-rect.ts';
@@ -32,6 +33,7 @@ export const TOOLS: Record<ToolId, ToolController> = {
   brush: brushTool,
   pencil: pencilTool,
   sketch: sketchTool,
+  highlighter: highlighterTool,
   eraser: eraserTool,
   bucket: bucketTool,
   clone: cloneTool,

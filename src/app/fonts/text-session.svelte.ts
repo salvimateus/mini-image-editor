@@ -389,7 +389,8 @@ class TextSession {
       if (next && next.kind === 'render' && next.session === job.session && next.layerId === job.layerId) return;
     }
     const doc = job.session.doc;
-    if (app.doc !== doc) return;
+    // A text of a background tab still lands in its document.
+    if (!app.isOpen(doc)) return;
     try {
       if (job.draft) {
         const at = placeText(job.draft.anchor, image, job.spec);
@@ -427,7 +428,7 @@ class TextSession {
   private cleanup(session: Session): void {
     const doc = session.doc;
     const id = session.layerId;
-    if (app.doc !== doc || id === null) return;
+    if (!app.isOpen(doc) || id === null) return;
     const layer = doc.layer(id);
     if (!layer || layer.kind !== 'text' || layer.spec.text) return;
     if (session.createdId === id) {

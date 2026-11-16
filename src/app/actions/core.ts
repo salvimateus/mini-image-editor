@@ -63,6 +63,7 @@ export const coreActions: ActionHandlers<CoreActionId> = {
   'tool.brush': tool('brush'),
   'tool.pencil': tool('pencil'),
   'tool.sketch': tool('sketch'),
+  'tool.highlighter': tool('highlighter'),
   'tool.eraser': tool('eraser'),
   'tool.bucket': tool('bucket'),
   'tool.clone': tool('clone'),

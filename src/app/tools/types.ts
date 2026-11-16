@@ -12,6 +12,7 @@ export type ToolId =
   | 'brush'
   | 'pencil'
   | 'sketch'
+  | 'highlighter'
   | 'eraser'
   | 'bucket'
   | 'clone'

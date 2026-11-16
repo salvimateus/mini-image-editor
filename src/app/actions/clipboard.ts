@@ -10,10 +10,10 @@ import { cancelTransform } from '../tools/move.ts';
 import { erasableLayer, erasePatch, hint, selectionOrHint, selectionPiece, type LayerPiece } from './select.ts';
 import type { ActionHandlers, ClipboardActionId } from './types.ts';
 
-/** Keeps the piece for the next paste and also puts it on the system clipboard. */
-function hold(piece: LayerPiece): void {
+/** Keeps the piece for the next paste and also puts it on the system clipboard; resolves to false when the system write fails. */
+function hold(piece: LayerPiece): Promise<boolean> {
   holdCopy(piece);
-  writeSystemImage(piece.image);
+  return writeSystemImage(piece.image);
 }
 
 /** The held copy as a new layer above the active one, at its own place; centered when that place leaves the stage. */
@@ -31,7 +31,7 @@ function pasteHeld(doc: EditorDoc): boolean {
   return true;
 }
 
-/** Ctrl+C, Ctrl+X and Ctrl+V on the stage. */
+/** Ctrl+C, Ctrl+X and Ctrl+V on the stage, and the copy of the whole image (Ctrl+Shift+C). */
 export const clipboardActions: ActionHandlers<ClipboardActionId> = {
   'edit.copy': () => {
     const doc = app.doc;
@@ -47,7 +47,22 @@ export const clipboardActions: ActionHandlers<ClipboardActionId> = {
       hint('select.toast.nothingCopied');
       return;
     }
-    hold(piece);
+    void hold(piece);
+    sfx.play('select');
+  },
+  'edit.copyImage': () => {
+    const doc = app.doc;
+    if (!doc) return;
+    cancelTransform(true);
+    // The write starts now, inside the user gesture: an await before it makes Safari and WebView2 refuse it.
+    void hold({ image: doc.flatten(), x: 0, y: 0 }).then((ok) => {
+      if (ok) {
+        app.toast(t('toast.imageCopied'), 'success');
+        return;
+      }
+      sfx.play('error');
+      app.toast(t('toast.copyFailed'), 'error');
+    });
     sfx.play('select');
   },
   'edit.cut': () => {
@@ -67,7 +82,7 @@ export const clipboardActions: ActionHandlers<ClipboardActionId> = {
       hint('select.toast.nothingCopied');
       return;
     }
-    hold(piece);
+    void hold(piece);
     doc.commitPatch(layer.id, patch, 'select.history.cut');
     sfx.play('delete');
   },

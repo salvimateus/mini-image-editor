@@ -22,6 +22,10 @@ export interface Scene {
   readonly maxZoom: number;
   /** The zoom of the first view, given a camera that already knows the viewport. */
   initialZoom(camera: Camera): number;
+  /** Keeps the view of the camera for the next show of the same content. */
+  saveView?(camera: Camera): void;
+  /** Shows the kept view again, once. False when there is none: the stage fits the content. */
+  restoreView?(camera: Camera): boolean;
   attach(host: StageHost | null): void;
   /** Main canvas: checkerboard, layers, preview. Returns true to keep the loop alive. */
   draw(ctx: CanvasRenderingContext2D, now: number): boolean;

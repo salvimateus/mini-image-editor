@@ -46,12 +46,12 @@ export interface ConfirmRequest {
 
 /** size in px; hardness and opacity 0..1. */
 export interface BrushSettings { size: number; hardness: number; opacity: number; shape: TipShape }
-export type BrushToolId = 'brush' | 'pencil' | 'eraser' | 'clone' | 'sketch';
+export type BrushToolId = 'brush' | 'pencil' | 'eraser' | 'clone' | 'sketch' | 'highlighter';
 /** The pencil tool keeps one size for each preset; `size` is always the size of the active preset. */
 export interface SketchSettings extends BrushSettings { preset: SketchPresetId; sizes: Record<SketchPresetId, number> }
 export type BrushMap = Record<BrushToolId, BrushSettings> & { sketch: SketchSettings };
 /** The brush tools that offer the square tip; the others stay round. */
-export const SHAPED_BRUSHES: ReadonlySet<BrushToolId> = new Set<BrushToolId>(['brush', 'eraser']);
+export const SHAPED_BRUSHES: ReadonlySet<BrushToolId> = new Set<BrushToolId>(['brush', 'eraser', 'highlighter']);
 export type PanelId = 'none' | 'hue-saturation' | 'levels' | 'sharpen' | 'vignette' | 'text' | 'frame';
 export type DialogId = 'none' | 'new-image' | 'canvas-size' | 'image-size' | 'export' | 'shortcuts' | 'about';
 export interface ViewFlags { rulers: boolean; guides: boolean; grid: boolean; snap: boolean; avatar: boolean; hud: boolean }
@@ -60,7 +60,7 @@ export interface CropRequest { ratioW: number; ratioH: number; mode: 'crop' | 'e
 /** upper: `bytes` is the size before optimization, and the optimized size is still in work. */
 export interface WeightState { bytes: number | null; pending: boolean; upper?: boolean }
 
-const BRUSH_TOOLS: readonly BrushToolId[] = ['brush', 'pencil', 'eraser', 'clone', 'sketch'];
+export const BRUSH_TOOLS: readonly BrushToolId[] = ['brush', 'pencil', 'eraser', 'clone', 'sketch', 'highlighter'];
 const BLACK: Rgba = { r: 0, g: 0, b: 0, a: 255 };
 const WHITE: Rgba = { r: 255, g: 255, b: 255, a: 255 };
 
@@ -200,7 +200,9 @@ class AppState {
   /** The progress of the tracked work, 0..1, or null when it is not known. */
   progress = $state<number | null>(null);
 
-  /** The open document; null shows the welcome screen. */
+  /** The open documents, one tab each, in tab order. */
+  docs = $state.raw<readonly EditorDoc[]>([]);
+  /** The active document, one of `docs`; null shows the welcome screen. */
   doc = $state.raw<EditorDoc | null>(null);
   readonly engine = new ImageEngine();
   tool = $state<ToolId>('move');
@@ -338,7 +340,7 @@ class AppState {
    * through the leave guard. The first note is sticky; after the user closes it, later failures show a timed one.
    */
   private onNewVersion(): void {
-    if (!this.doc?.history.dirty) {
+    if (!this.anyDirty) {
       location.reload();
       return;
     }
@@ -474,10 +476,42 @@ class AppState {
 
   // ----- documents -----
 
-  /** True when there is nothing to lose, or when the user agrees to lose it. */
-  private async confirmDiscard(): Promise<boolean> {
-    if (!this.doc?.history.dirty) return true;
+  isOpen(doc: EditorDoc): boolean {
+    return this.docs.includes(doc);
+  }
+
+  /** Some open document has changes that are not exported. */
+  get anyDirty(): boolean {
+    return this.docs.some((doc) => doc.history.dirty);
+  }
+
+  /**
+   * A name that the app made (a new image, a pasted image) gets the smallest free number among the open tabs, so the
+   * tabs stay apart: "Untitled", "Untitled 2", "Untitled 3". A name from a user file stays as it is.
+   */
+  private tabName(name: string): string {
+    const madeNames = [t('chrome.untitled'), t('doc.pastedImageName'), t('doc.pastedSvgName')];
+    if (!madeNames.includes(name)) return name;
+    const used = new Set(this.docs.map((doc) => doc.name));
+    if (!used.has(name)) return name;
+    for (let n = 2; ; n++) {
+      const numbered = t('chrome.numberedName', { name, n });
+      if (!used.has(numbered)) return numbered;
+    }
+  }
+
+  /** True when there is nothing to lose in `doc`, or when the user agrees to lose it. */
+  private async confirmDiscard(doc: EditorDoc): Promise<boolean> {
+    if (!doc.history.dirty) return true;
     return this.confirm(t('chrome.discard.title'), t('chrome.discard.body'), t('chrome.discard.confirm'));
+  }
+
+  /** False, with a note, when one more document would pass the tab limit. */
+  private canOpenDocument(): boolean {
+    const max = PARAMS.limits.maxDocuments;
+    if (this.docs.length < max) return true;
+    this.refuse(t('toast.tabLimit', { max }));
+    return false;
   }
 
   private setDocument(doc: EditorDoc | null): void {
@@ -487,10 +521,22 @@ class AppState {
     this.stagePick = null;
     this.cropRequest = null;
     this.weight = { bytes: null, pending: false };
-    // A new document starts with the grid of the last one.
-    doc?.setGrid(lastGrid());
     this.doc = doc;
     if (doc) TOOLS[this.tool]?.activate?.();
+  }
+
+  /** Adds `doc` as a new tab and makes it active. */
+  private openDocument(doc: EditorDoc): void {
+    // A new document starts with the grid of the last one.
+    doc.setGrid(lastGrid());
+    this.docs = [...this.docs, doc];
+    this.setDocument(doc);
+  }
+
+  /** Makes an open document the active one. */
+  selectDocument(doc: EditorDoc): void {
+    if (doc === this.doc || !this.isOpen(doc)) return;
+    this.setDocument(doc);
   }
 
   private async decodeFile(file: File): Promise<RasterImage | null> {
@@ -535,11 +581,12 @@ class AppState {
     let rest = images;
     // One note for each action, however many SVG files refer to outside fonts or images.
     let external = false;
+    let target = this.doc;
     if (mode === 'document') {
-      if (!(await this.confirmDiscard())) return;
+      if (!this.canOpenDocument()) return;
       const [first] = images;
       rest = images.slice(1);
-      const name = docName(first);
+      const name = this.tabName(docName(first));
       let doc: EditorDoc;
       if (isSvgFile(first)) {
         const svg = await this.renderSvgFile(first, (spec) => growSvgSpec(spec, PARAMS.svg.minDocumentSide));
@@ -553,12 +600,15 @@ class AppState {
         if (!image) return;
         doc = new EditorDoc({ width: image.width, height: image.height, name, layers: [createRasterLayer(name, image)], sourceBytes: first.size });
       }
-      this.setDocument(doc);
+      // Another open can take the last tab during the decode.
+      if (!this.canOpenDocument()) return;
+      this.openDocument(doc);
+      target = doc;
       sfx.play('open');
       this.warnIfLarge(doc.width, doc.height);
       trackOpen(first, 'document', doc.width, doc.height);
     }
-    for (const file of rest) if (await this.addImageLayer(file)) external = true;
+    if (target) for (const file of rest) if (await this.addImageLayer(target, file)) external = true;
     if (external) this.toast(t('chrome.svgExternal'), 'info');
   }
 
@@ -566,12 +616,11 @@ class AppState {
    * Adds the image above the active layer, centered; an image larger than the stage is fitted inside it. True when it
    * is an SVG that refers to fonts or images outside the file.
    */
-  private async addImageLayer(file: File): Promise<boolean> {
-    const doc = this.doc;
-    if (!doc) return false;
+  private async addImageLayer(doc: EditorDoc, file: File): Promise<boolean> {
+    if (!this.isOpen(doc)) return false;
     if (isSvgFile(file)) return this.addSvgLayer(doc, file);
     let image = await this.decodeFile(file);
-    if (!image || this.doc !== doc) return false;
+    if (!image || !this.isOpen(doc)) return false;
     const name = docName(file);
     const source = { width: image.width, height: image.height };
     let fitted = false;
@@ -585,7 +634,7 @@ class AppState {
         this.fail(error);
         return false;
       }
-      if (this.doc !== doc) return false;
+      if (!this.isOpen(doc)) return false;
       fitted = true;
     }
     const x = Math.round((doc.width - image.width) / 2);
@@ -600,7 +649,7 @@ class AppState {
   /** Adds the SVG above the active layer, centered, at the largest size that fits inside the stage (up or down). */
   private async addSvgLayer(doc: EditorDoc, file: File): Promise<boolean> {
     const svg = await this.renderSvgFile(file, (spec) => fitSvgSpec(spec, doc.width, doc.height));
-    if (!svg || this.doc !== doc) return false;
+    if (!svg || !this.isOpen(doc)) return false;
     const { spec, image } = svg;
     const name = docName(file);
     const x = Math.round((doc.width - image.width) / 2);
@@ -620,19 +669,28 @@ class AppState {
       this.fail(new CoreError('too-large', `The stage would have ${w * h} pixels.`));
       return;
     }
-    if (!(await this.confirmDiscard())) return;
+    if (!this.canOpenDocument()) return;
     const image = createRaster(w, h, fill && fill.a > 0 ? fill : undefined);
     const layer = createRasterLayer(t('doc.backgroundName'), image);
-    this.setDocument(new EditorDoc({ width: w, height: h, name: t('chrome.untitled'), layers: [layer] }));
+    this.openDocument(new EditorDoc({ width: w, height: h, name: this.tabName(t('chrome.untitled')), layers: [layer] }));
     sfx.play('open');
     this.warnIfLarge(w, h);
   }
 
-  /** Asks when the document is dirty. False when the user keeps it. */
-  async closeDocument(): Promise<boolean> {
-    if (!this.doc) return true;
-    if (!(await this.confirmDiscard())) return false;
-    this.setDocument(null);
+  /**
+   * Closes the tab of `doc` (the active document by default) and asks first when it is dirty. A dirty background tab
+   * becomes active before the question, so the user sees what can be lost. False when the user keeps it.
+   */
+  async closeDocument(doc: EditorDoc | null = this.doc): Promise<boolean> {
+    if (!doc || !this.isOpen(doc)) return true;
+    if (doc.history.dirty) this.selectDocument(doc);
+    if (!(await this.confirmDiscard(doc))) return false;
+    // A second close of the same tab during the question already removed it.
+    const index = this.docs.indexOf(doc);
+    if (index < 0) return true;
+    const rest = this.docs.filter((open) => open !== doc);
+    this.docs = rest;
+    if (doc === this.doc) this.setDocument(rest[index] ?? rest[index - 1] ?? null);
     return true;
   }
 

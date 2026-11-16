@@ -9,6 +9,15 @@ interface ZoomTarget {
   imageY: number;
 }
 
+/** A view to show again later: the zoom and the pan, and the viewport that the pan belongs to. */
+export interface CameraView {
+  zoom: number;
+  panX: number;
+  panY: number;
+  viewW: number;
+  viewH: number;
+}
+
 /**
  * Zoom and pan math between screen space (CSS pixels of the stage) and document space (document pixels).
  * `zoom` is screen pixels per document pixel.
@@ -68,6 +77,21 @@ export class Camera {
     this.zoom = clamp(zoom, this.minZoom, this.maxZoom);
     this.panX = (this.viewW - this.contentW * this.zoom) / 2;
     this.panY = (this.viewH - this.contentH * this.zoom) / 2;
+  }
+
+  /** The view now. A smooth zoom in progress jumps to its end first, so the saved view is the one the user asked for. */
+  saveView(): CameraView {
+    this.finishZoom();
+    return { zoom: this.zoom, panX: this.panX, panY: this.panY, viewW: this.viewW, viewH: this.viewH };
+  }
+
+  /** Shows a saved view again. Call it after setContent; a viewport of a new size keeps the saved view center. */
+  restoreView(view: CameraView): void {
+    this.target = null;
+    this.zoom = clamp(view.zoom, this.minZoom, this.maxZoom);
+    this.panX = view.panX + (this.viewW - view.viewW) / 2;
+    this.panY = view.panY + (this.viewH - view.viewH) / 2;
+    this.clampPan();
   }
 
   /** Zooms by `factor` and keeps the content point under (screenX, screenY) in place. */

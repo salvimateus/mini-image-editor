@@ -3,6 +3,7 @@ import type { ToolId } from '../../app/tools/types.ts';
 import BucketOptions from './BucketOptions.svelte';
 import CloneOptions from './CloneOptions.svelte';
 import CropOptions from './CropOptions.svelte';
+import HighlighterOptions from './HighlighterOptions.svelte';
 import MoveOptions from './MoveOptions.svelte';
 import PaintOptions from './PaintOptions.svelte';
 import SelectOptions from './SelectOptions.svelte';
@@ -23,6 +24,7 @@ export const TOOL_OPTIONS: Record<ToolId, Component | null> = {
   brush: PaintOptions,
   pencil: PaintOptions,
   sketch: SketchOptions,
+  highlighter: HighlighterOptions,
   eraser: PaintOptions,
   bucket: BucketOptions,
   clone: CloneOptions,

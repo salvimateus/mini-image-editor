@@ -14,6 +14,9 @@ export const ptBR = {
   'toast.notImage': 'Não deu para abrir este arquivo como imagem. Use PNG, JPG, WebP, GIF, BMP ou SVG.',
   'toast.skippedFiles': '{count} arquivos ficaram de fora porque não são imagens.',
   'toast.nothingToPaste': 'Não há imagem na área de transferência. Copie uma imagem e tente de novo.',
+  'toast.imageCopied': 'Imagem copiada. [[Ctrl+V]] cola em outro app.',
+  'toast.copyFailed': 'Não deu para copiar a imagem. Use Exportar.',
+  'toast.tabLimit': 'Feche uma aba antes de abrir outra. O limite é {max} abas.',
   'toast.newVersion': 'Há uma versão nova do app. Salve o seu trabalho e recarregue a página.',
   'toast.reload': 'Recarregar',
 
@@ -64,6 +67,9 @@ export const en: Record<keyof typeof ptBR, string> = {
   'toast.notImage': 'This file could not be opened as an image. Use PNG, JPG, WebP, GIF, BMP or SVG.',
   'toast.skippedFiles': '{count} files were left out because they are not images.',
   'toast.nothingToPaste': 'There is no image on the clipboard. Copy an image and try again.',
+  'toast.imageCopied': 'Image copied. [[Ctrl+V]] pastes it in another app.',
+  'toast.copyFailed': 'The image could not be copied. Use Export.',
+  'toast.tabLimit': 'Close a tab before you open another one. The limit is {max} tabs.',
   'toast.newVersion': 'There is a new version of the app. Save your work and reload the page.',
   'toast.reload': 'Reload',
 

@@ -7,6 +7,7 @@ import { setPaintPointer } from '../../ui/overlays/brush-cursor.ts';
 import { showLoupe } from '../../ui/overlays/loupe.ts';
 import type { StagePointer } from '../../ui/stage-renderer.ts';
 import type { EditorDoc } from '../doc.svelte.ts';
+import type { RasterLayer } from '../layers.ts';
 import { t, type TextKey } from '../i18n/index.ts';
 import * as sfx from '../sfx.ts';
 import { app, brushShape, type BrushSettings, type BrushToolId } from '../state.svelte.ts';
@@ -31,6 +32,11 @@ export interface StrokeToolConfig {
   prepare?(doc: EditorDoc, start: Point): CloneSource | null;
   /** The pointer moved (document px), during a hover or a stroke. */
   pointerAt?(point: Point | null): void;
+  /**
+   * The layer of a new stroke, in place of doc.paintTarget(). With `created`, the add of that layer is the undo step of
+   * the stroke: the stroke paints it in place and records no patch, and a stroke that changes no pixel takes it away.
+   */
+  target?(doc: EditorDoc): { layer: RasterLayer; created: boolean };
 }
 
 /** The shared hints of the brush tools. */
@@ -59,8 +65,9 @@ function samplesOf(p: StagePointer): readonly StrokePoint[] {
 }
 
 /**
- * A paint tool that drags strokes on the paint target: brush, pen, eraser, clone stamp, pencil. Each stroke is one undo
- * step. Shift+click draws a straight line from the end of the last stroke; Alt+click or a right click picks a color.
+ * A paint tool that drags strokes on the paint target: brush, pen, eraser, clone stamp, pencil, highlighter. Each stroke
+ * is one undo step. Shift+click draws a straight line from the end of the last stroke; Alt+click or a right click picks
+ * a color. `config.target` replaces the paint target (the highlighter paints on a layer of its own).
  */
 export function createStrokeTool(config: StrokeToolConfig): ToolController {
   let stroke: Stroke | null = null;
@@ -71,6 +78,8 @@ export function createStrokeTool(config: StrokeToolConfig): ToolController {
   let lastSound = 0;
   let selection: Mask | null = null;
   let reachedSelection = false;
+  /** The stroke layer is new: config.target added it for this stroke. */
+  let created = false;
 
   /** Notes when one of the stroke points (document px) is inside the selection. */
   function noteReach(points: readonly Point[]): void {
@@ -88,6 +97,15 @@ export function createStrokeTool(config: StrokeToolConfig): ToolController {
     sfx.play(config.sound);
   }
 
+  /** Takes away the layer that this stroke added: by its own undo step while it is the newest step, else by a removal. */
+  function dropCreated(doc: EditorDoc): void {
+    if (!created) return;
+    created = false;
+    if (!app.isOpen(doc)) return;
+    if (doc.layer(layerId) && doc.history.undoLabel === config.label) doc.undo();
+    if (doc.layer(layerId)) doc.removeLayer(layerId);
+  }
+
   function finish(): void {
     const current = stroke;
     const doc = strokeDoc;
@@ -101,10 +119,19 @@ export function createStrokeTool(config: StrokeToolConfig): ToolController {
     selection = null;
     if (!patch && missed) {
       // The selection clips the stroke, so a stroke that never enters it changes no pixel.
+      dropCreated(doc);
       app.refuse(t('paint.toast.outsideSelection'));
       return;
     }
-    if (!patch || !doc.layer(layerId)) return;
+    if (!patch || !doc.layer(layerId)) {
+      dropCreated(doc);
+      return;
+    }
+    if (created) {
+      // The add-layer step keeps this same image, so its undo and redo also take and give back the stroke.
+      created = false;
+      return;
+    }
     try {
       doc.commitPatch(layerId, patch, config.label);
     } catch (error) {
@@ -114,10 +141,12 @@ export function createStrokeTool(config: StrokeToolConfig): ToolController {
 
   function cancel(): void {
     const current = stroke;
+    const doc = strokeDoc;
     stroke = null;
     if (!current) return;
     touch(current.cancel());
     strokeDoc = null;
+    if (doc) dropCreated(doc);
   }
 
   function start(p: StagePointer): boolean {
@@ -126,7 +155,7 @@ export function createStrokeTool(config: StrokeToolConfig): ToolController {
     const pressure = pressureOf(p);
     const point: StrokePoint = { x: p.ix, y: p.iy, pressure };
     const active = doc.active;
-    if (active && active.kind === 'raster' && !active.generator && !active.visible) {
+    if (!config.target && active && active.kind === 'raster' && !active.generator && !active.visible) {
       app.refuse(t('paint.toast.hiddenLayer'));
       return false;
     }
@@ -136,7 +165,9 @@ export function createStrokeTool(config: StrokeToolConfig): ToolController {
       source = config.prepare(doc, line ?? point);
       if (!source) return false;
     }
-    const layer = doc.paintTarget();
+    const target = config.target ? config.target(doc) : { layer: doc.paintTarget(), created: false };
+    const layer = target.layer;
+    created = target.created;
     const settings = brushSettings(config.id);
     const textured = config.texture?.() ?? null;
     stroke = new Stroke({

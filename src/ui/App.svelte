@@ -26,6 +26,7 @@
   import RightPanel from './RightPanel.svelte';
   import SideResizer from './SideResizer.svelte';
   import StatusBar from './StatusBar.svelte';
+  import TabBar from './TabBar.svelte';
   import ToolRail from './ToolRail.svelte';
   import TopBar from './TopBar.svelte';
   import Welcome from './Welcome.svelte';
@@ -160,7 +161,7 @@
     let disposed = false;
     let unguard: (() => void) | null = null;
     guardWindowClose(
-      () => app.doc?.history.dirty ?? false,
+      () => app.anyDirty,
       () => app.confirm(t('chrome.quit.title'), t('chrome.quit.body'), t('chrome.quit.confirm')),
     )
       .then((cleanup) => {
@@ -208,6 +209,7 @@
       <div class="area-top"><TopBar /></div>
       <div class="area-rail"><ToolRail /></div>
       <div class="area-options"><OptionsBar /></div>
+      <div class="area-tabs"><TabBar /></div>
       <div class="area-stage">
         <EditorStage />
         <KeyHud />
@@ -247,6 +249,7 @@
       grid-template:
         'top top top' auto
         'rail options side' auto
+        'rail tabs side' auto
         'rail stage side' minmax(0, 1fr)
         'rail hints side' auto
         'status status status' auto
@@ -269,6 +272,11 @@
 
     .area-options {
       grid-area: options;
+      min-width: 0;
+    }
+
+    .area-tabs {
+      grid-area: tabs;
       min-width: 0;
     }
 

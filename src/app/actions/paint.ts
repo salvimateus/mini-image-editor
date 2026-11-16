@@ -2,14 +2,12 @@ import { PARAMS } from '../../core/params/index.ts';
 import { flashBrush } from '../../ui/overlays/brush-cursor.ts';
 import { t } from '../i18n/index.ts';
 import * as sfx from '../sfx.ts';
-import { app, type BrushToolId } from '../state.svelte.ts';
+import { app, BRUSH_TOOLS, type BrushToolId } from '../state.svelte.ts';
 import { TUNING } from '../tuning/index.ts';
 import type { ActionHandlers, PaintActionId } from './types.ts';
 
-const BRUSH_TOOLS: ReadonlySet<string> = new Set<BrushToolId>(['brush', 'pencil', 'eraser', 'clone', 'sketch']);
-
 function activeBrush(): BrushToolId | null {
-  if (BRUSH_TOOLS.has(app.tool)) return app.tool as BrushToolId;
+  if (BRUSH_TOOLS.includes(app.tool as BrushToolId)) return app.tool as BrushToolId;
   app.refuse(t('paint.toast.needBrush'));
   return null;
 }

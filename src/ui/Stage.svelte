@@ -200,6 +200,7 @@
     if (!sized) {
       sized = true;
       camera.setContent(scene.contentW, scene.contentH, scene.maxZoom);
+      if (scene.restoreView?.(camera)) userMoved = true;
     }
     if (!userMoved) camera.fit(scene.initialZoom(camera));
     // A canvas resize clears it: draw now so the frame never flashes empty.
@@ -217,12 +218,18 @@
       userMoved = false;
       if (sized) {
         camera.setContent(current.contentW, current.contentH, current.maxZoom);
-        camera.fit(current.initialZoom(camera));
+        // A view that the user moved comes back with its tab; an untouched view fits again.
+        if (current.restoreView?.(camera)) userMoved = true;
+        else camera.fit(current.initialZoom(camera));
         onviewchange?.();
       }
       invalidate();
     });
-    return () => untrack(() => current.attach(null));
+    return () =>
+      untrack(() => {
+        if (userMoved) current.saveView?.(camera);
+        current.attach(null);
+      });
   });
 
   onMount(() => {
