@@ -88,7 +88,8 @@ The six color themes.
 - With a text or shape layer active, the magic wand reads the pixels of that layer. It does not add a layer.
 - When the active layer is hidden, the magic wand shows "The active layer is hidden. Show the layer to select in it."
 - Soft edge, select all, deselect and invert.
-- A floating bar next to the selection copies it, cuts it, erases it or fills it with the foreground color.
+- A floating bar next to the selection copies it, cuts it, erases it, fills it with the foreground color or fills it from its content.
+- Content-aware fill (Shift+Backspace, the Select menu or the selection bar) removes what is in the selection: it fills the selection from the pixels of the active layer around it. It does not grow the layer, and the selection stays. It is one undo step, and Esc cancels it while it runs. It operates only on normal pixel layers.
 - Ctrl+C copies the selected pixels of the active layer, and keeps the soft edge. With no selection, it copies the full layer.
 - Ctrl+X cuts the selection: it copies and erases the pixels in one undo step. It operates only on normal pixel layers, like Erase.
 - Ctrl+V pastes a copy from the app as a new layer at the same position, with the exact pixels.
@@ -125,15 +126,16 @@ The six color themes.
 - Pen (hard edge, pixel by pixel), brush (hardness and opacity) and eraser. The cursor shows the outline of the brush.
 - The brush, the eraser and the highlighter have a "Tip" option in the options bar: "Round" or "Square". The cursor shows a square outline for a square tip.
 - A square tip is parallel to the axes, and its side is the tip size. The hardness also applies to it.
-- With a selection, the brush, the pen, the Pencil, the highlighter, the eraser and the clone stamp change only the pixels inside it. A stroke fully outside the selection changes no pixel, and the app shows "Outside the selection. Ctrl+D deselects."
+- With a selection, the brush, the pen, the Pencil, the highlighter, the eraser, the clone stamp and the spot healing brush change only the pixels inside it. A stroke fully outside the selection changes no pixel, and the app shows "Outside the selection. Ctrl+D deselects."
 - Paint bucket with a tolerance and the "Connected area only" option. The bucket reads only the pixels of the active layer, so the other layers do not limit the fill.
 - On an empty layer, one click of the bucket fills the full layer, or the selection when there is one.
 - With a text, shape or generated layer active, the bucket adds a new layer and fills it. This is one undo step.
 - Highlighter: a translucent stroke in the foreground color, with a square tip, size 24 px and 40% opacity by default. It paints on a "Highlight" layer above the active layer, so the pixels of the image do not change. While that layer stays active, the next strokes go on it; else the first stroke adds a new one. One stroke and its new layer are one undo step.
 - The options bar of the highlighter has 5 colors (yellow, green, pink, cyan and orange), the tip, the size, the hardness and the opacity.
 - Clone stamp: Alt+click or right-click sets the source. The hardness makes the edge hard or soft.
+- Spot healing brush (J): paint over a spot, and when you release the button, the app fills the stroke area from the pixels of the active layer around it. There is no source point. The stroke shows in gray while you paint, and the area pulses until the fill is done. Each stroke is one undo step, and Esc cancels the fill while it runs. The opacity blends the fill with the old pixels. It operates only on normal pixel layers and does not grow the layer.
 - Eyedropper with a loupe. In the paint tools, Alt+click or right-click picks a color.
-- Shift+click draws a straight line from the end of the last stroke, with the brush, the pen, the Pencil, the highlighter, the eraser and the clone stamp.
+- Shift+click draws a straight line from the end of the last stroke, with the brush, the pen, the Pencil, the highlighter, the eraser, the clone stamp and the spot healing brush.
 - Color panel: foreground and background swatches, a saturation and brightness square, a hue strip, a hex field and the last 12 colors.
 
 ### Pencil
@@ -286,6 +288,7 @@ The app does not restore the last tool or an open panel. To put all the settings
 | Tools | Eraser | E |
 | Tools | Paint bucket | G |
 | Tools | Clone stamp | S |
+| Tools | Spot healing brush | J |
 | Tools | Text | T |
 | Tools | Shapes | U |
 | Tools | Steps | N |
@@ -306,6 +309,7 @@ The app does not restore the last tool or an open panel. To put all the settings
 | Select | Invert selection | Ctrl+Shift+I |
 | Select | Erase selection | Delete |
 | Select | Fill selection | Alt+Backspace |
+| Select | Content-aware fill | Shift+Backspace |
 | Layer | New layer | Ctrl+Shift+N |
 | Layer | Duplicate layer | Ctrl+J |
 | Layer | Merge down | Ctrl+E |
@@ -332,7 +336,7 @@ Ctrl+S and F1 also operate while you type in a text field.
 | Selection tools | Intersect with the selection | Shift+Alt |
 | Paint tools | Pick a color | Alt+click or right-click |
 | Clone stamp | Set the source | Alt+click or right-click |
-| Brush, pen, Pencil, eraser, clone stamp | Straight line from the end of the last stroke | Shift+click |
+| Brush, pen, Pencil, eraser, clone stamp, spot healing brush | Straight line from the end of the last stroke | Shift+click |
 | Move tool | Move the layer 1 px (10 px) | Arrow keys (Shift+arrow keys) |
 | Move tool | Move the selected pixels to a new layer | Drag inside the selection |
 | Layer handles | Resize freely | Shift |

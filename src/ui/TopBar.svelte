@@ -39,7 +39,7 @@
         'layer.alignBottom',
       ],
     },
-    { id: 'select', label: 'menu.select', items: ['select.all', 'select.none', 'select.invert', null, 'select.erase', 'select.fill'] },
+    { id: 'select', label: 'menu.select', items: ['select.all', 'select.none', 'select.invert', null, 'select.erase', 'select.fill', 'select.contentFill'] },
     {
       id: 'view',
       label: 'menu.view',

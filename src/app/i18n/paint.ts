@@ -1,4 +1,4 @@
-/** UI text of the paint feature: brush, pen, pencil, highlighter, eraser, clone stamp, bucket, eyedropper and the Color panel. */
+/** UI text of the paint feature: brush, pen, pencil, highlighter, eraser, clone stamp, spot healing brush, bucket, eyedropper and the Color panel. */
 export const ptBR = {
   'paint.hint.paint': 'Pintar',
   'paint.hint.pencil': 'Desenhar pixel a pixel',
@@ -15,6 +15,8 @@ export const ptBR = {
   'paint.hint.sketch': 'Desenhar',
   'paint.hint.highlight': 'Grifar numa camada própria acima da atual',
   'paint.hint.pressure': 'A pressão na mesa digitalizadora muda o traço',
+  'paint.hint.heal': 'Pinte sobre a mancha para removê-la',
+  'paint.hint.healCancel': 'Cancelar o preenchimento',
 
   'paint.history.brush': 'Pincel',
   'paint.history.pencil': 'Caneta',
@@ -22,6 +24,7 @@ export const ptBR = {
   'paint.history.highlighter': 'Marca-texto',
   'paint.history.eraser': 'Borracha',
   'paint.history.clone': 'Carimbo',
+  'paint.history.heal': 'Pincel de recuperação para manchas',
   'paint.history.fill': 'Balde de tinta',
 
   'paint.toast.hiddenLayer': 'A camada ativa está oculta. Mostre a camada para pintar nela.',
@@ -30,9 +33,15 @@ export const ptBR = {
   'paint.toast.nothingToFill': 'Não há nada para preencher aqui.',
   'paint.toast.outsideSelection': 'Fora da seleção. [[Ctrl+D]] desmarca.',
   'paint.toast.outside': 'Clique dentro da imagem.',
-  'paint.toast.needBrush': 'Para mudar o tamanho, escolha o pincel, a caneta, o lápis, o marca-texto, a borracha ou o carimbo.',
+  'paint.toast.needBrush': 'Para mudar o tamanho, escolha uma destas ferramentas: pincel, caneta, lápis, marca-texto, borracha, carimbo ou recuperação.',
   'paint.toast.pencilHard': 'A caneta é sempre dura.',
   'paint.toast.sketchHard': 'O lápis não tem dureza: cada textura tem a sua.',
+  'paint.toast.healLayer': 'Não dá para recuperar nesta camada. Escolha uma camada de imagem.',
+  'paint.toast.healNoSource': 'Não há pixels em volta para preencher a área.',
+  'paint.toast.healChanged': 'A camada mudou durante o preenchimento. Tente de novo.',
+  'paint.toast.healCancelled': 'Preenchimento cancelado.',
+
+  'paint.progress.heal': 'Preenchendo a área. [[Esc]] cancela.',
 
   'paint.flash.size': '{size} px',
   'paint.flash.hardness': 'Dureza {value}%',
@@ -113,6 +122,8 @@ export const en: Record<keyof typeof ptBR, string> = {
   'paint.hint.sketch': 'Draw',
   'paint.hint.highlight': 'Highlight on its own layer above the current one',
   'paint.hint.pressure': 'Tablet pressure changes the stroke',
+  'paint.hint.heal': 'Paint over a spot to remove it',
+  'paint.hint.healCancel': 'Cancel the fill',
 
   'paint.history.brush': 'Brush',
   'paint.history.pencil': 'Pen',
@@ -120,6 +131,7 @@ export const en: Record<keyof typeof ptBR, string> = {
   'paint.history.highlighter': 'Highlighter',
   'paint.history.eraser': 'Eraser',
   'paint.history.clone': 'Clone stamp',
+  'paint.history.heal': 'Spot healing brush',
   'paint.history.fill': 'Paint bucket',
 
   'paint.toast.hiddenLayer': 'The active layer is hidden. Show the layer to paint on it.',
@@ -128,9 +140,15 @@ export const en: Record<keyof typeof ptBR, string> = {
   'paint.toast.nothingToFill': 'Nothing to fill here.',
   'paint.toast.outsideSelection': 'Outside the selection. [[Ctrl+D]] deselects.',
   'paint.toast.outside': 'Click inside the image.',
-  'paint.toast.needBrush': 'To change the size, choose the brush, pen, pencil, highlighter, eraser or clone stamp.',
+  'paint.toast.needBrush': 'To change the size, choose one of these tools: brush, pen, pencil, highlighter, eraser, clone stamp or spot healing brush.',
   'paint.toast.pencilHard': 'The pen is always hard.',
   'paint.toast.sketchHard': 'The pencil has no hardness: each texture has its own.',
+  'paint.toast.healLayer': 'You cannot heal on this layer. Choose an image layer.',
+  'paint.toast.healNoSource': 'There are no pixels around the area to fill from.',
+  'paint.toast.healChanged': 'The layer changed during the fill. Try again.',
+  'paint.toast.healCancelled': 'Fill cancelled.',
+
+  'paint.progress.heal': 'Filling the area. [[Esc]] cancels.',
 
   'paint.flash.size': '{size} px',
   'paint.flash.hardness': 'Hardness {value}%',

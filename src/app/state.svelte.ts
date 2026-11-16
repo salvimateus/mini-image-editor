@@ -11,7 +11,7 @@ import { EditorDoc } from './doc.svelte.ts';
 import { ImageEngine } from './engine.ts';
 import { cleanBaseName } from './file-name.ts';
 import { HistoryBudget } from './history.svelte.ts';
-import { t } from './i18n/index.ts';
+import { t, type TextKey } from './i18n/index.ts';
 import { lastGrid } from './last-used.ts';
 import { createRasterLayer, createSvgLayer } from './layers.ts';
 import { colorField, onPrefsReset, pickField, readJson, readPrefs, savePrefs } from './prefs.ts';
@@ -47,7 +47,7 @@ export interface ConfirmRequest {
 
 /** size in px; hardness and opacity 0..1. */
 export interface BrushSettings { size: number; hardness: number; opacity: number; shape: TipShape }
-export type BrushToolId = 'brush' | 'pencil' | 'eraser' | 'clone' | 'sketch' | 'highlighter';
+export type BrushToolId = 'brush' | 'pencil' | 'eraser' | 'clone' | 'heal' | 'sketch' | 'highlighter';
 /** The pencil tool keeps one size for each preset; `size` is always the size of the active preset. */
 export interface SketchSettings extends BrushSettings { preset: SketchPresetId; sizes: Record<SketchPresetId, number> }
 export type BrushMap = Record<BrushToolId, BrushSettings> & { sketch: SketchSettings };
@@ -61,7 +61,7 @@ export interface CropRequest { ratioW: number; ratioH: number; mode: 'crop' | 'e
 /** upper: `bytes` is the size before optimization, and the optimized size is still in work. */
 export interface WeightState { bytes: number | null; pending: boolean; upper?: boolean }
 
-export const BRUSH_TOOLS: readonly BrushToolId[] = ['brush', 'pencil', 'eraser', 'clone', 'sketch', 'highlighter'];
+export const BRUSH_TOOLS: readonly BrushToolId[] = ['brush', 'pencil', 'eraser', 'clone', 'heal', 'sketch', 'highlighter'];
 const BLACK: Rgba = { r: 0, g: 0, b: 0, a: 255 };
 const WHITE: Rgba = { r: 255, g: 255, b: 255, a: 255 };
 
@@ -200,6 +200,8 @@ class AppState {
   showProgress = $state(false);
   /** The progress of the tracked work, 0..1, or null when it is not known. */
   progress = $state<number | null>(null);
+  /** The labels of the open labeled work, oldest first; the pill shows the newest one. */
+  progressLabels = $state.raw<readonly TextKey[]>([]);
 
   /** The open documents, one tab each, in tab order. */
   docs = $state.raw<readonly EditorDoc[]>([]);
@@ -359,9 +361,18 @@ class AppState {
     this.toast(text, 'info');
   }
 
-  /** Counts the work as busy; the progress pill shows when it lasts longer than the progress delay. */
-  async track<T>(work: Promise<T>): Promise<T> {
+  /** The text of the progress pill: the label of the newest labeled work, or null for the default text. */
+  get progressLabel(): TextKey | null {
+    return this.progressLabels.at(-1) ?? null;
+  }
+
+  /**
+   * Counts the work as busy; the progress pill shows when it lasts longer than the progress delay. With `label`, the
+   * pill shows that text while the work runs.
+   */
+  async track<T>(work: Promise<T>, label?: TextKey): Promise<T> {
     this.busyCount++;
+    if (label) this.progressLabels = [...this.progressLabels, label];
     const timer = setTimeout(() => {
       if (this.busyCount > 0) this.showProgress = true;
     }, TUNING.ui.progressDelayMs);
@@ -369,6 +380,10 @@ class AppState {
       return await work;
     } finally {
       clearTimeout(timer);
+      if (label) {
+        const at = this.progressLabels.lastIndexOf(label);
+        if (at >= 0) this.progressLabels = this.progressLabels.filter((_, index) => index !== at);
+      }
       this.busyCount--;
       if (this.busyCount === 0) {
         this.showProgress = false;

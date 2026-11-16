@@ -3,6 +3,7 @@ import { blitRaster, createRaster, cropRaster, intersectRect, opaqueBounds, read
 import type { Patch, RasterImage, Rect, Rgba } from '../../core/types.ts';
 import type { EditorDoc } from '../doc.svelte.ts';
 import { t, type TextKey } from '../i18n/index.ts';
+import { healHole, type HoleCover } from '../inpaint.ts';
 import { layerRect, type Layer, type RasterLayer } from '../layers.ts';
 import * as sfx from '../sfx.ts';
 import { app } from '../state.svelte.ts';
@@ -95,6 +96,27 @@ export function selectionPiece(layer: Layer, selection: Mask | null): LayerPiece
   return { image: cropRaster(full, tight), x: layer.x + rect.x + tight.x, y: layer.y + rect.y + tight.y };
 }
 
+/** The coverage of the selection over the layer image, in layer px; null when it covers no pixel of the image. */
+function selectionHole(layer: RasterLayer, selection: Mask): HoleCover | null {
+  const rect = selectionRect(selection, layer, { x: 0, y: 0, w: layer.image.width, h: layer.image.height });
+  if (!rect) return null;
+  const data = new Uint8Array(rect.w * rect.h);
+  let covered = false;
+  for (let y = 0; y < rect.h; y++) {
+    const docY = rect.y + layer.y + y;
+    if (docY < 0 || docY >= selection.height) continue;
+    for (let x = 0; x < rect.w; x++) {
+      const docX = rect.x + layer.x + x;
+      if (docX < 0 || docX >= selection.width) continue;
+      const cover = selection.data[docY * selection.width + docX];
+      if (cover === 0) continue;
+      data[y * rect.w + x] = cover;
+      covered = true;
+    }
+  }
+  return covered ? { rect, data } : null;
+}
+
 /** Paints `color` over each pixel with the coverage of the selection as its alpha (straight-alpha "over"). */
 function fillByCoverage(data: Uint8ClampedArray, rect: Rect, selection: Mask, ox: number, oy: number, color: Rgba): void {
   for (let y = 0; y < rect.h; y++) {
@@ -143,7 +165,7 @@ function fillSelection(doc: EditorDoc, selection: Mask, target: RasterLayer, col
   doc.replaceImage(target.id, image, { x: area.x, y: area.y }, 'select.history.fill');
 }
 
-/** Ctrl+A, Ctrl+D, Ctrl+Shift+I, Delete and Alt+Backspace. */
+/** Ctrl+A, Ctrl+D, Ctrl+Shift+I, Delete, Alt+Backspace and Shift+Backspace. */
 export const selectActions: ActionHandlers<SelectActionId> = {
   'select.all': () => {
     const doc = app.doc;
@@ -211,5 +233,18 @@ export const selectActions: ActionHandlers<SelectActionId> = {
     const color = app.fg;
     doc.batch('select.history.fill', () => fillSelection(doc, selection, doc.paintTarget(), color));
     sfx.play('fill');
+  },
+  'select.contentFill': () => {
+    const doc = app.doc;
+    if (!doc) return;
+    const selection = selectionOrHint(doc);
+    if (!selection) return;
+    cancelTransform(true);
+    const layer = doc.active;
+    if (!erasableLayer(layer)) return hint('select.toast.fillLayer');
+    if (!layer.visible) return hint('select.toast.fillHidden');
+    const hole = selectionHole(layer, selection);
+    if (!hole) return hint('select.toast.fillOutside');
+    void healHole(doc, layer.id, hole, 'select.history.contentFill');
   },
 };

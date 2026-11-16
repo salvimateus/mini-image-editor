@@ -16,6 +16,7 @@ export type ToolId =
   | 'eraser'
   | 'bucket'
   | 'clone'
+  | 'heal'
   | 'text'
   | 'shape'
   | 'step'

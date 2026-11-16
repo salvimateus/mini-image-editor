@@ -1,8 +1,8 @@
-import type { CloneSource, StrokeMode, StrokePoint, StrokeTexture } from '../../core/stroke.ts';
+import type { CloneSource, StrokeCoverage, StrokeMode, StrokePoint, StrokeTexture } from '../../core/stroke.ts';
 import { Stroke } from '../../core/stroke.ts';
 import { coverage, type Mask } from '../../core/mask.ts';
 import { PARAMS } from '../../core/params/index.ts';
-import type { Point, Rect } from '../../core/types.ts';
+import type { Point, Rect, Rgba } from '../../core/types.ts';
 import { setPaintPointer } from '../../ui/overlays/brush-cursor.ts';
 import { showLoupe } from '../../ui/overlays/loupe.ts';
 import type { StagePointer } from '../../ui/stage-renderer.ts';
@@ -37,6 +37,37 @@ export interface StrokeToolConfig {
    * the stroke: the stroke paints it in place and records no patch, and a stroke that changes no pixel takes it away.
    */
   target?(doc: EditorDoc): { layer: RasterLayer; created: boolean };
+  /** Runs before the target; false cancels the press, and the config tells the user why. */
+  allow?(doc: EditorDoc): boolean;
+  /**
+   * Replaces the commit: the stroke shows only a footprint in `tint`, and on release the layer pixels go back and `run`
+   * owns the undo step.
+   */
+  settle?: { tint: Rgba; run(stroke: SettledStroke): void };
+}
+
+/** A released stroke of a `settle` config: its coverage in layer px and the stored opacity of the tool. */
+export interface SettledStroke { doc: EditorDoc; layerId: number; coverage: StrokeCoverage; opacity: number }
+
+/** True while a stroke of any stroke tool writes into a layer image; only one tool is active at a time. */
+let painting = false;
+let idleWaiters: (() => void)[] = [];
+
+function setPainting(value: boolean): void {
+  painting = value;
+  if (value) return;
+  const waiters = idleWaiters;
+  idleWaiters = [];
+  for (const resolve of waiters) resolve();
+}
+
+/**
+ * Resolves when no stroke is in progress. A stroke keeps the old pixels of its tiles and writes them back on cancel or
+ * reads them for its patch, so an async write into a layer waits for it.
+ */
+export function strokeIdle(): Promise<void> {
+  if (!painting) return Promise.resolve();
+  return new Promise((resolve) => idleWaiters.push(resolve));
 }
 
 /** The shared hints of the brush tools. */
@@ -65,9 +96,10 @@ function samplesOf(p: StagePointer): readonly StrokePoint[] {
 }
 
 /**
- * A paint tool that drags strokes on the paint target: brush, pen, eraser, clone stamp, pencil, highlighter. Each stroke
- * is one undo step. Shift+click draws a straight line from the end of the last stroke; Alt+click or a right click picks
- * a color. `config.target` replaces the paint target (the highlighter paints on a layer of its own).
+ * A paint tool that drags strokes on the paint target: brush, pen, eraser, clone stamp, spot healing, pencil,
+ * highlighter. Each stroke is one undo step. Shift+click draws a straight line from the end of the last stroke; Alt+click
+ * or a right click picks a color. `config.target` replaces the paint target (the highlighter paints on a layer of its
+ * own), and `config.settle` hands the released stroke to async work.
  */
 export function createStrokeTool(config: StrokeToolConfig): ToolController {
   let stroke: Stroke | null = null;
@@ -80,6 +112,8 @@ export function createStrokeTool(config: StrokeToolConfig): ToolController {
   let reachedSelection = false;
   /** The stroke layer is new: config.target added it for this stroke. */
   let created = false;
+  /** The stored opacity of the tool at the press, for a settle config that paints only a footprint. */
+  let settleOpacity = 1;
 
   /** Notes when one of the stroke points (document px) is inside the selection. */
   function noteReach(points: readonly Point[]): void {
@@ -113,10 +147,24 @@ export function createStrokeTool(config: StrokeToolConfig): ToolController {
     strokeDoc = null;
     if (!current || !doc) return;
     const end = current.lastPoint;
-    const patch = current.end();
     if (end) lastEnd = { doc, layerId, point: end };
     const missed = !!selection && !reachedSelection;
     selection = null;
+    if (config.settle) {
+      // Both end() and cancel() drop the tiles, so the coverage is read first.
+      const covered = current.coverage();
+      const back = current.cancel();
+      setPainting(false);
+      if (back) doc.touch({ layerId, rect: back });
+      if (!covered) {
+        if (missed) app.refuse(t('paint.toast.outsideSelection'));
+        return;
+      }
+      if (doc.layer(layerId)) config.settle.run({ doc, layerId, coverage: covered, opacity: settleOpacity });
+      return;
+    }
+    const patch = current.end();
+    setPainting(false);
     if (!patch && missed) {
       // The selection clips the stroke, so a stroke that never enters it changes no pixel.
       dropCreated(doc);
@@ -145,6 +193,7 @@ export function createStrokeTool(config: StrokeToolConfig): ToolController {
     stroke = null;
     if (!current) return;
     touch(current.cancel());
+    setPainting(false);
     strokeDoc = null;
     if (doc) dropCreated(doc);
   }
@@ -159,6 +208,7 @@ export function createStrokeTool(config: StrokeToolConfig): ToolController {
       app.refuse(t('paint.toast.hiddenLayer'));
       return false;
     }
+    if (config.allow && !config.allow(doc)) return false;
     const line = p.shift && lastEnd && lastEnd.doc === doc && active && lastEnd.layerId === active.id ? lastEnd.point : null;
     let source: CloneSource | null = null;
     if (config.prepare) {
@@ -170,14 +220,16 @@ export function createStrokeTool(config: StrokeToolConfig): ToolController {
     created = target.created;
     const settings = brushSettings(config.id);
     const textured = config.texture?.() ?? null;
+    const settle = config.settle;
+    settleOpacity = settings.opacity;
     stroke = new Stroke({
       image: layer.image,
       offset: { x: layer.x, y: layer.y },
       mode: config.mode,
-      color: app.fg,
+      color: settle ? settle.tint : app.fg,
       size: settings.size,
       hardness: config.aliased ? 1 : (textured?.hardness ?? settings.hardness),
-      opacity: settings.opacity,
+      opacity: settle ? 1 : settings.opacity,
       aliased: config.aliased,
       shape: settings.shape,
       selection: doc.selection,
@@ -188,7 +240,8 @@ export function createStrokeTool(config: StrokeToolConfig): ToolController {
     layerId = layer.id;
     selection = doc.selection;
     reachedSelection = false;
-    if (config.mode === 'paint') app.remember(app.fg);
+    setPainting(true);
+    if (config.mode === 'paint' && !settle) app.remember(app.fg);
     const points: StrokePoint[] = line ? [{ ...line, pressure }, point] : [point];
     noteReach(points);
     touch(stroke.addPoints(points));

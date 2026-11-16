@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { runAction } from '../app/actions/index.ts';
   import { dropHeldCopy, heldCopy, pastedFiles } from '../app/clipboard.ts';
+  import { cancelHeals } from '../app/inpaint.ts';
   import { keyHud } from '../app/key-hud.svelte.ts';
   import { app, isImageFile } from '../app/state.svelte.ts';
   import { sideWidth } from '../app/side-width.svelte.ts';
@@ -115,7 +116,10 @@
     if (event.key === 'F5' || (mod && (key === 'r' || key === 'p' || key === 'f'))) event.preventDefault();
   }
 
-  /** Key order: an editable target keeps its keys (unless whileTyping), then the active tool, then the shortcuts. */
+  /**
+   * Key order: an editable target keeps its keys (unless whileTyping), then the active tool, then the cancel of the
+   * pending fills, then the shortcuts.
+   */
   function onKeyDown(event: KeyboardEvent): void {
     keyHud.keyDown(event);
     // A focused control or the stage already used this key.
@@ -131,6 +135,11 @@
     const onButton = event.target instanceof HTMLElement && /^(BUTTON|SUMMARY|A)$/.test(event.target.tagName) && event.target.matches(':focus-visible');
     if (onButton && event.key === 'Enter') return;
     if (!typing && app.doc && TOOLS[app.tool]?.key?.(event)) {
+      event.preventDefault();
+      return;
+    }
+    // A stroke, a transform or a crop of the tool keeps its Esc; the other uses of Esc wait until no fill is pending.
+    if (!typing && event.key === 'Escape' && cancelHeals()) {
       event.preventDefault();
       return;
     }

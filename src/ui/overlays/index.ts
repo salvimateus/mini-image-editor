@@ -4,6 +4,7 @@ import { brushCursorOverlay } from './brush-cursor.ts';
 import { cropOverlay } from './crop.ts';
 import { gridOverlay } from './grid.ts';
 import { guidesOverlay } from './guides.ts';
+import { healPendingOverlay } from './heal-pending.ts';
 import { loupeOverlay } from './loupe.ts';
 import { pixelGridOverlay } from './pixel-grid.ts';
 import { selectedLayersOverlay } from './selected-layers.svelte.ts';
@@ -23,6 +24,7 @@ export const OVERLAYS: readonly SceneOverlay[] = [
   avatarOverlay,
   guidesOverlay,
   selectionOverlay,
+  healPendingOverlay,
   selectedLayersOverlay,
   cropOverlay,
   alignRefOverlay,

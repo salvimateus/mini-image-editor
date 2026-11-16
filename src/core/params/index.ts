@@ -1,5 +1,6 @@
 import { ADJUST_PARAMS } from './adjust.ts';
 import { EXPORT_PARAMS } from './export.ts';
+import { INPAINT_PARAMS } from './inpaint.ts';
 import { ASPECT_PARAMS, HISTORY_PARAMS, LIMITS_PARAMS, MASK_PARAMS } from './limits.ts';
 import { PAINT_PARAMS } from './paint.ts';
 import { RESAMPLE_PARAMS } from './resample.ts';
@@ -16,4 +17,5 @@ export const PARAMS = {
   adjust: ADJUST_PARAMS,
   export: EXPORT_PARAMS,
   svg: SVG_PARAMS,
+  inpaint: INPAINT_PARAMS,
 } as const;

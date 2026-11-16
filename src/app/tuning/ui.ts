@@ -51,6 +51,7 @@ export const UI_TUNING = {
     pencil: { size: 1, hardness: 1, opacity: 1, shape: 'round' },
     eraser: { size: 32, hardness: 0.9, opacity: 1, shape: 'round' },
     clone: { size: 40, hardness: 0.6, opacity: 1, shape: 'round' },
+    heal: { size: 40, hardness: 0.8, opacity: 1, shape: 'round' },
     highlighter: { size: 24, hardness: 1, opacity: 0.4, shape: 'square' },
     /** The pencil (`sketch`): the tip hardness comes from the preset; `sizes` is the start size of each preset. */
     sketch: {

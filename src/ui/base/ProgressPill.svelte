@@ -1,21 +1,24 @@
 <script lang="ts">
   import { app } from '../../app/state.svelte.ts';
   import { t } from '../../app/i18n/index.ts';
+  import KeyText from './KeyText.svelte';
 
   interface Props {
-    /** The text of the pill; the default is a plain "working". */
+    /** The text of the pill; by default the label of the tracked work, else a plain "working". */
     label?: string;
   }
 
   let { label: given }: Props = $props();
-  const label = $derived(given ?? t('progress.working'));
+  /** `[[Key]]` tokens show as keycaps. */
+  const label = $derived(given ?? (app.progressLabel ? t(app.progressLabel) : t('progress.working')));
+  const plainLabel = $derived(label.replace(/\[\[([^\]]+)\]\]/g, '$1'));
 
   const ratio = $derived(app.progress === null ? null : Math.min(1, Math.max(0, app.progress)));
 </script>
 
 {#if app.showProgress}
-  <div class="progress" role="progressbar" aria-label={label} aria-valuemin="0" aria-valuemax="100" aria-valuenow={ratio === null ? undefined : Math.round(ratio * 100)}>
-    <span class="progress-label">{label}</span>
+  <div class="progress" role="progressbar" aria-label={plainLabel} aria-valuemin="0" aria-valuemax="100" aria-valuenow={ratio === null ? undefined : Math.round(ratio * 100)}>
+    <span class="progress-label"><KeyText text={label} /></span>
     <span class="progress-track">
       <span class="progress-bar" class:is-indeterminate={ratio === null} style:transform="scaleX({ratio ?? 0.35})"></span>
     </span>

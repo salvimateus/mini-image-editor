@@ -5,10 +5,16 @@ import type { AdjustOp, ExportOptions, Histogram, Point, RasterImage, Rect, Resa
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 type RequestBody = DistributiveOmit<EngineRequest, 'id'>;
-type LaneName = 'fast' | 'codec';
+type LaneName = 'fast' | 'codec' | 'heal';
 
 /** Only these calls use "latest wins": a stale call resolves null. */
 type LatestKind = 'adjust-preview' | 'vignette' | 'estimate';
+
+/** filled: `image` holds the blended pixels of `rect` (the hole bounds, in px of the sent image); the receiver owns it. */
+export type InpaintOutcome =
+  | { kind: 'filled'; image: RasterImage; rect: Rect }
+  | { kind: 'no-source' }
+  | { kind: 'cancelled' };
 
 export class EngineError extends Error {
   readonly code: ErrorCode;
@@ -136,7 +142,8 @@ function expect<T extends RequestType>(reply: EngineReply, type: T): ReplyFor<T>
 
 /**
  * The only door to the workers. Lane `fast` runs decode, adjust, vignette and resize; lane `codec` runs estimate and
- * export. Each image that the caller keeps is copied before the transfer.
+ * export; lane `heal` runs inpaint, so a long fill blocks neither of the others and can stop with a restart. Each image
+ * that the caller keeps is copied before the transfer.
  */
 export class ImageEngine {
   private nextId = 1;
@@ -145,6 +152,7 @@ export class ImageEngine {
   private deferred: DeferredEstimate | null = null;
   private readonly fast = new Lane('fast', (ratio) => this.emit(ratio), () => {});
   private readonly codec = new Lane('codec', (ratio) => this.emit(ratio), () => this.flushDeferred());
+  private readonly heal = new Lane('heal', (ratio) => this.emit(ratio), () => {});
 
   onProgress(listener: (ratio: number) => void): () => void {
     this.listeners.add(listener);
@@ -239,7 +247,25 @@ export class ImageEngine {
     return { bytes: new Uint8Array(data), plainBytes };
   }
 
-  /** Ends both workers; every open call fails with `internal`. */
+  /**
+   * Fills the hole of `image` (one coverage value 0..255 per px) with patches from the rest of the image and blends
+   * the fill by coverage times `strength` (0..1). Resolves `cancelled` when `cancelInpaint` runs before the reply.
+   */
+  async inpaint(image: RasterImage, hole: Uint8Array, strength: number): Promise<InpaintOutcome> {
+    const copy = copyImage(image);
+    const holeCopy = hole.slice();
+    const reply = await this.heal.send(this.nextId++, { type: 'inpaint', image: copy, hole: holeCopy, strength }, [copy.data.buffer, holeCopy.buffer]);
+    if (!reply) return { kind: 'cancelled' };
+    const result = expect(reply, 'inpaint');
+    return result.image ? { kind: 'filled', image: result.image, rect: result.rect } : { kind: 'no-source' };
+  }
+
+  /** Stops every open inpaint with a restart of the heal worker. The other lanes keep running. */
+  cancelInpaint(): void {
+    if (this.heal.pending.size) this.heal.restart();
+  }
+
+  /** Ends all workers; every open call fails with `internal`. */
   dispose(): void {
     if (this.deferred) {
       this.deferred.resolve(null);
@@ -247,6 +273,7 @@ export class ImageEngine {
     }
     this.fast.dispose();
     this.codec.dispose();
+    this.heal.dispose();
   }
 
   private emit(ratio: number): void {

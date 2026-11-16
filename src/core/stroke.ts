@@ -77,6 +77,9 @@ function axisDistance(ux: number, uy: number, dx: number, dy: number, t: number)
   return Math.max(Math.abs(ux - k * dx), Math.abs(uy - k * dy));
 }
 
+/** The coverage of a stroke, 0..255 with the selection applied, inside `rect` (layer px), row-major. */
+export interface StrokeCoverage { rect: Rect; data: Uint8Array }
+
 /** The old pixels and the stroke coverage of one tile, kept from the first stamp that touches it. */
 interface Tile { x: number; y: number; w: number; h: number; before: Uint8ClampedArray; cover: Float32Array; grain: Float32Array | null }
 
@@ -227,6 +230,31 @@ export class Stroke {
     this.tiles.clear();
     for (let i = 0; i < after.length; i++) if (after[i] !== before[i]) return { rect, before, after };
     return null;
+  }
+
+  /** The coverage of the stroke so far; null when no pixel is covered, or after end or cancel. */
+  coverage(): StrokeCoverage | null {
+    const rect = this.changed;
+    if (this.done || !rect) return null;
+    const data = new Uint8Array(rect.w * rect.h);
+    let covered = false;
+    for (const tile of this.tiles.values()) {
+      const x0 = Math.max(rect.x, tile.x);
+      const y0 = Math.max(rect.y, tile.y);
+      const x1 = Math.min(rect.x + rect.w, tile.x + tile.w);
+      const y1 = Math.min(rect.y + rect.h, tile.y + tile.h);
+      for (let y = y0; y < y1; y++) {
+        const from = (y - tile.y) * tile.w - tile.x;
+        const to = (y - rect.y) * rect.w - rect.x;
+        for (let x = x0; x < x1; x++) {
+          const value = Math.round(tile.cover[from + x] * 255);
+          if (value === 0) continue;
+          data[to + x] = value;
+          covered = true;
+        }
+      }
+    }
+    return covered ? { rect: { ...rect }, data } : null;
   }
 
   /** Puts the old pixels back. Returns the rect that changed back (layer px), or null. */

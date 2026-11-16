@@ -39,6 +39,19 @@ export const PAINT_TUNING = {
   pickBurst: { count: 9, speed: [70, 170], life: [0.22, 0.42], size: [3, 6], jitter: 2 },
   /** Gravity of both bursts: low, so the dots float. */
   burstGravity: 260,
+  /** The footprint of a spot healing stroke while it is in progress: a translucent dark gray, as in the classic editors. */
+  healTint: { r: 40, g: 40, b: 40, a: 140 },
+  /** The mark of a fill that waits or runs: the hole in `healTint`, pulsing, then a fade when the result lands. */
+  healMark: {
+    /** One pulse, in ms; the alpha of the mark goes from `alpha[0]` to `alpha[1]` and back. */
+    pulseMs: 900,
+    alpha: [0.45, 1],
+    /** The alpha under reduced motion, with no pulse. */
+    stillAlpha: 0.75,
+    fadeMs: 260,
+    /** A larger hole is drawn from a smaller sprite, so its build stays cheap. */
+    spriteMaxPx: 1_000_000,
+  },
   /** The swatches of the highlighter options, opaque: the tool opacity makes them translucent. */
   highlightColors: [
     { id: 'yellow', color: { r: 255, g: 230, b: 0, a: 255 } },

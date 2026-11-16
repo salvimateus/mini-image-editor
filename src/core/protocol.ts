@@ -16,7 +16,9 @@ export type EngineRequest =
   | { id: number; type: 'resize'; image: RasterImage; width: number; height: number; method: ResampleMethod }
   /** quick: only the plain size; both reply numbers are that size. */
   | { id: number; type: 'estimate'; image: RasterImage; options: ExportOptions; quick?: boolean }
-  | { id: number; type: 'export'; image: RasterImage; options: ExportOptions };
+  | { id: number; type: 'export'; image: RasterImage; options: ExportOptions }
+  /** hole: one coverage value 0..255 per image px; strength 0..1 scales the blend of the fill. */
+  | { id: number; type: 'inpaint'; image: RasterImage; hole: Uint8Array; strength: number };
 
 export type EngineReply =
   | { id: number; ok: true; type: 'decode'; image: RasterImage; format: string }
@@ -26,6 +28,8 @@ export type EngineReply =
   | { id: number; ok: true; type: 'adjust-end' }
   | { id: number; ok: true; type: 'estimate'; plainBytes: number; bytes: number }
   | { id: number; ok: true; type: 'export'; data: ArrayBuffer; plainBytes: number }
+  /** image: the blended pixels of rect (the hole bounds, in request image px); null when no patch can be a source. */
+  | { id: number; ok: true; type: 'inpaint'; image: RasterImage | null; rect: Rect }
   | { id: number; ok: false; error: ErrorCode; detail?: string };
 
 export type EngineEvent = { id: number; type: 'progress'; ratio: number };

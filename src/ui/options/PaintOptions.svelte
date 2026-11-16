@@ -17,13 +17,13 @@
   ];
 
   interface Props {
-    /** The brush tool whose settings show; by default the active tool (brush, pen, eraser, clone stamp or highlighter). */
+    /** The brush tool whose settings show; by default the active tool (brush, pen, eraser, clone stamp, spot healing brush or highlighter). */
     tool?: BrushToolId;
   }
 
   let { tool }: Props = $props();
 
-  const id = $derived<BrushToolId>(tool ?? (app.tool === 'pencil' || app.tool === 'eraser' || app.tool === 'clone' || app.tool === 'highlighter' ? app.tool : 'brush'));
+  const id = $derived<BrushToolId>(tool ?? (app.tool === 'pencil' || app.tool === 'eraser' || app.tool === 'clone' || app.tool === 'heal' || app.tool === 'highlighter' ? app.tool : 'brush'));
   const settings = $derived(app.brush[id]);
   const defaults = $derived(TUNING.ui.brushDefaults[id]);
   /** The pencil tool resets the size to the start size of its preset. */

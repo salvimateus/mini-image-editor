@@ -1,5 +1,6 @@
 <script lang="ts" module>
   import type { Component } from 'svelte';
+  import Bandage from '@lucide/svelte/icons/bandage';
   import Brush from '@lucide/svelte/icons/brush';
   import CircleDashed from '@lucide/svelte/icons/circle-dashed';
   import Crop from '@lucide/svelte/icons/crop';
@@ -41,6 +42,7 @@
     eraser: { icon: Eraser, label: 'chrome.tool.eraser', action: 'tool.eraser' },
     bucket: { icon: PaintBucket, label: 'chrome.tool.bucket', action: 'tool.bucket' },
     clone: { icon: Stamp, label: 'chrome.tool.clone', action: 'tool.clone' },
+    heal: { icon: Bandage, label: 'chrome.tool.heal', action: 'tool.heal' },
     text: { icon: Type, label: 'chrome.tool.text', action: 'tool.text' },
     shape: { icon: Shapes, label: 'chrome.tool.shape', action: 'tool.shape' },
     step: { icon: ListOrdered, label: 'chrome.tool.step', action: 'tool.step' },
@@ -52,7 +54,7 @@
     ['move'],
     ['marquee-rect', 'marquee-ellipse', 'lasso', 'wand'],
     ['crop'],
-    ['brush', 'pencil', 'sketch', 'highlighter', 'eraser', 'bucket', 'clone'],
+    ['brush', 'pencil', 'sketch', 'highlighter', 'eraser', 'bucket', 'clone', 'heal'],
     ['shape', 'step'],
     ['eyedropper'],
     ['text'],
@@ -117,10 +119,10 @@
     }
 
     /*
-     * Each step holds the 19 tools in 8 groups: about 935, 762, 632, 567 and 548 px tall (N tools of size S, gap g, group
+     * Each step holds the 20 tools in 8 groups: about 978, 798, 662, 594 and 554 px tall (N tools of size S, gap g, group
      * gap G: N*S + (N-8)*g + 16*G + 14). A 960 x 640 window gives the rail about 556 px.
      */
-    @container (max-height: 940px) {
+    @container (max-height: 980px) {
       .rail-inner {
         --tool-size: 34px;
         --tool-gap: 2px;
@@ -129,7 +131,7 @@
       }
     }
 
-    @container (max-height: 770px) {
+    @container (max-height: 800px) {
       .rail-inner {
         --tool-size: 28px;
         --tool-gap: 2px;
@@ -138,7 +140,7 @@
       }
     }
 
-    @container (max-height: 640px) {
+    @container (max-height: 665px) {
       .rail-inner {
         --tool-size: 26px;
         --tool-gap: 1px;
@@ -147,9 +149,9 @@
       }
     }
 
-    @container (max-height: 575px) {
+    @container (max-height: 596px) {
       .rail-inner {
-        --tool-size: 25px;
+        --tool-size: 24px;
       }
     }
 

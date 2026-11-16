@@ -2,6 +2,7 @@ import type { Handler, RequestType } from '../protocol.ts';
 import { adjustBegin, adjustCommit, adjustEnd, adjustPreview, vignette } from './adjust.ts';
 import { decode } from './decode.ts';
 import { estimate, exportImage } from './export.ts';
+import { inpaint } from './inpaint.ts';
 import { resize } from './resize.ts';
 
 /** One handler for each request type. */
@@ -15,4 +16,5 @@ export const HANDLERS: { [T in RequestType]: Handler<T> } = {
   resize,
   estimate,
   export: exportImage,
+  inpaint,
 };

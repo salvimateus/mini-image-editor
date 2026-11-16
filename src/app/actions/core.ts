@@ -83,6 +83,7 @@ export const coreActions: ActionHandlers<CoreActionId> = {
   'tool.eraser': tool('eraser'),
   'tool.bucket': tool('bucket'),
   'tool.clone': tool('clone'),
+  'tool.heal': tool('heal'),
   'tool.text': tool('text'),
   'tool.shape': tool('shape'),
   'tool.step': tool('step'),

@@ -26,6 +26,7 @@ export type ActionId =
   | 'select.invert'
   | 'select.erase'
   | 'select.fill'
+  | 'select.contentFill'
   | 'layer.new'
   | 'layer.duplicate'
   | 'layer.delete'
@@ -111,6 +112,7 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   { id: 'tool.eraser', combos: [key('e')], label: 'chrome.tool.eraser', group: 'tools' },
   { id: 'tool.bucket', combos: [key('g')], label: 'chrome.tool.bucket', group: 'tools' },
   { id: 'tool.clone', combos: [key('s')], label: 'chrome.tool.clone', group: 'tools' },
+  { id: 'tool.heal', combos: [key('j')], label: 'chrome.tool.heal', group: 'tools' },
   { id: 'tool.text', combos: [key('t')], label: 'chrome.tool.text', group: 'tools' },
   { id: 'tool.shape', combos: [key('u')], label: 'chrome.tool.shape', group: 'tools' },
   { id: 'tool.step', combos: [key('n')], label: 'chrome.tool.step', group: 'tools' },
@@ -137,6 +139,7 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   { id: 'select.invert', combos: [ctrl('i', { shift: true })], label: 'action.select.invert', group: 'select' },
   { id: 'select.erase', combos: [key('Delete')], label: 'action.select.erase', group: 'select' },
   { id: 'select.fill', combos: [key('Backspace', { alt: true })], label: 'action.select.fill', group: 'select' },
+  { id: 'select.contentFill', combos: [key('Backspace', { shift: true })], label: 'action.select.contentFill', group: 'select' },
 
   { id: 'layer.new', combos: [ctrl('n', { shift: true })], label: 'action.layer.new', group: 'layer' },
   { id: 'layer.duplicate', combos: [ctrl('j')], label: 'action.layer.duplicate', group: 'layer' },

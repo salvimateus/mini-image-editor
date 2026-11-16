@@ -28,6 +28,7 @@ export const TOOL_OPTIONS: Record<ToolId, Component | null> = {
   eraser: PaintOptions,
   bucket: BucketOptions,
   clone: CloneOptions,
+  heal: PaintOptions,
   text: TextOptions,
   shape: ShapeOptions,
   step: StepOptions,
