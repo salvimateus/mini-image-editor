@@ -184,7 +184,7 @@
 
     .title {
       font-weight: 900;
-      font-size: clamp(2.25rem, 3vw + 1rem, 3.25rem);
+      font-size: clamp(2.25rem, calc(var(--view-w) * 0.03) + 1rem, 3.25rem);
       letter-spacing: -0.01em;
       text-shadow: 0 4px 0 var(--depth);
     }
@@ -294,7 +294,7 @@
       }
     }
 
-    @media (max-height: 760px) {
+    @container app (max-height: 760px) {
       .welcome {
         gap: var(--space-3);
         padding-block: var(--space-3);

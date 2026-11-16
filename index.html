@@ -9,6 +9,8 @@
     <link rel="icon" type="image/svg+xml" href="/app-icon.svg" />
     <!-- Sets the stored theme before the first paint. A file, not an inline script: the desktop CSP blocks inline code. -->
     <script src="/theme-init.js"></script>
+    <!-- Sets the stored interface size before the first paint, for the same reason. -->
+    <script src="/ui-size-init.js"></script>
     <!-- The layer order must come before any other stylesheet, including the component styles. -->
     <style>
       @layer reset, base, components, utilities;

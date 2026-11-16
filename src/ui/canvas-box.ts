@@ -1,3 +1,5 @@
+import { uiZoom } from '../app/ui-size.svelte.ts';
+
 /** The box of a canvas on screen: its CSS size and its exact size in physical pixels. */
 export interface CanvasBox {
   cssW: number;
@@ -14,7 +16,9 @@ export interface CanvasBox {
  * The canvas fills its parent (`position: absolute; inset: 0`). Its edges go to the nearest whole physical pixel:
  * a small `translate` and an explicit CSS size absorb a layout that gives a fraction. The physical size comes from
  * `devicePixelContentBoxSize` when it agrees with the ratio, else from the snapped edges. Above `maxRatio` the
- * backing store stays at that ratio, to limit its memory. Returns the stop function.
+ * backing store stays at that ratio, to limit its memory. Under the CSS zoom of the root (a larger interface in a
+ * browser), the CSS sizes are layout px and one of them covers `devicePixelRatio * zoom` physical px. Returns the
+ * stop function.
  */
 export function watchCanvasBox(canvas: HTMLCanvasElement, onbox: (box: CanvasBox) => void, maxRatio = Infinity): () => void {
   const parent = canvas.parentElement;
@@ -23,19 +27,21 @@ export function watchCanvasBox(canvas: HTMLCanvasElement, onbox: (box: CanvasBox
   let last = '';
 
   const report = (): void => {
+    const zoom = uiZoom();
     const rect = parent.getBoundingClientRect();
-    const left = rect.left + parent.clientLeft;
-    const top = rect.top + parent.clientTop;
-    const width = rect.width - parent.clientLeft - (parent.offsetWidth - parent.clientWidth - parent.clientLeft);
-    const height = rect.height - parent.clientTop - (parent.offsetHeight - parent.clientHeight - parent.clientTop);
+    const left = rect.left / zoom + parent.clientLeft;
+    const top = rect.top / zoom + parent.clientTop;
+    const width = rect.width / zoom - parent.clientLeft - (parent.offsetWidth - parent.clientWidth - parent.clientLeft);
+    const height = rect.height / zoom - parent.clientTop - (parent.offsetHeight - parent.clientHeight - parent.clientTop);
     if (width <= 0 || height <= 0) return;
-    const ratio = Math.min(window.devicePixelRatio || 1, maxRatio);
+    const deviceRatio = (window.devicePixelRatio || 1) * zoom;
+    const ratio = Math.min(deviceRatio, maxRatio);
     const x0 = Math.round(left * ratio);
     const y0 = Math.round(top * ratio);
     let pxW = Math.max(1, Math.round((left + width) * ratio) - x0);
     let pxH = Math.max(1, Math.round((top + height) * ratio) - y0);
     // The browser measure of the same box wins when it agrees (an emulated ratio reports the CSS size instead).
-    if (device && ratio === window.devicePixelRatio && Math.abs(device.w - pxW) <= 1 && Math.abs(device.h - pxH) <= 1) {
+    if (device && ratio === deviceRatio && Math.abs(device.w - pxW) <= 1 && Math.abs(device.h - pxH) <= 1) {
       pxW = device.w;
       pxH = device.h;
     }

@@ -2,6 +2,7 @@
   import { onMount, untrack, type Snippet } from 'svelte';
   import type { Point } from '../core/types.ts';
   import { TUNING } from '../app/tuning/index.ts';
+  import { uiZoom } from '../app/ui-size.svelte.ts';
   import { Camera } from './camera.ts';
   import { watchCanvasBox, type CanvasBox } from './canvas-box.ts';
   import { ParticleField } from './particles.ts';
@@ -288,10 +289,14 @@
     return { x: point.x, y: point.y, pressure: pressureOf(event) };
   }
 
+  /** A client point in the layout px of the canvas: the camera works in those, also under the CSS zoom of the root. */
+  function toCanvas(rect: DOMRect, clientX: number, clientY: number): Point {
+    const zoom = uiZoom();
+    return { x: (clientX - rect.left) / zoom, y: (clientY - rect.top) / zoom };
+  }
+
   function pointer(event: PointerEvent | WheelEvent, samples?: readonly StageSample[]): StagePointer {
-    const rect = canvas.getBoundingClientRect();
-    const sx = event.clientX - rect.left;
-    const sy = event.clientY - rect.top;
+    const { x: sx, y: sy } = toCanvas(canvas.getBoundingClientRect(), event.clientX, event.clientY);
     const p = camera.screenToImage(sx, sy);
     return {
       sx,
@@ -313,8 +318,12 @@
     const rect = canvas.getBoundingClientRect();
     const events = typeof event.getCoalescedEvents === 'function' ? event.getCoalescedEvents() : [];
     const list = events.length ? events : [event];
-    const points = list.map((entry) => sample(camera.screenToImage(entry.clientX - rect.left, entry.clientY - rect.top), entry));
-    points[points.length - 1] = sample(camera.screenToImage(event.clientX - rect.left, event.clientY - rect.top), event);
+    const toImage = (entry: PointerEvent): Point => {
+      const at = toCanvas(rect, entry.clientX, entry.clientY);
+      return camera.screenToImage(at.x, at.y);
+    };
+    const points = list.map((entry) => sample(toImage(entry), entry));
+    points[points.length - 1] = sample(toImage(event), event);
     return points;
   }
 
@@ -352,14 +361,15 @@
       onhover?.(pointer(event));
       return;
     }
-    const dx = event.clientX - drag.lastX;
-    const dy = event.clientY - drag.lastY;
+    const zoom = uiZoom();
+    const dx = (event.clientX - drag.lastX) / zoom;
+    const dy = (event.clientY - drag.lastY) / zoom;
     drag.lastX = event.clientX;
     drag.lastY = event.clientY;
-    if (drag.mode === 'alt' && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > TUNING.stage.altPanThresholdPx) {
+    if (drag.mode === 'alt' && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) / zoom > TUNING.stage.altPanThresholdPx) {
       drag.mode = 'pan';
       panning = true;
-      camera.panBy(event.clientX - drag.startX - dx, event.clientY - drag.startY - dy);
+      camera.panBy((event.clientX - drag.startX) / zoom - dx, (event.clientY - drag.startY) / zoom - dy);
     }
     if (drag.mode === 'pan') {
       userMoved = true;

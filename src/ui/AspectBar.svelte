@@ -125,7 +125,7 @@
       position: relative;
     }
 
-    @media (max-width: 1180px) {
+    @container app (max-width: 1180px) {
       .ratio {
         padding: 0 4px;
       }

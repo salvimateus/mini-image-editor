@@ -89,7 +89,7 @@
 <style>
   @layer components {
     .sheet {
-      max-height: calc(100dvh - 48px);
+      max-height: calc(var(--view-h) - 48px);
       overflow: auto;
     }
 

@@ -2,6 +2,7 @@
   import Check from '@lucide/svelte/icons/check';
   import { tick, type Snippet } from 'svelte';
   import * as sfx from '../../app/sfx.ts';
+  import { localRect } from '../../app/ui-size.svelte.ts';
   import { tooltip } from './tooltip.ts';
 
   interface Props {
@@ -76,10 +77,11 @@
   }
 
   function place(): void {
-    const area = bounds?.();
-    if (!area || !list) return;
+    const client = bounds?.();
+    if (!client || !list) return;
+    const area = localRect(client);
     // Layout offsets, not the client rect of the panel: the open animation scales it.
-    const origin = box.getBoundingClientRect();
+    const origin = localRect(box.getBoundingClientRect());
     const width = list.offsetWidth;
     const left = origin.left + list.offsetLeft;
     const bottom = origin.top + list.offsetTop + list.offsetHeight;
@@ -331,7 +333,7 @@
     }
 
     /* The same breakpoint and size as the action buttons of TopBar.svelte. */
-    @media (max-width: 1180px) {
+    @container app (max-width: 1180px) {
       .in-bar {
         width: 34px;
         height: 34px;

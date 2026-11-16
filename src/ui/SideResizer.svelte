@@ -4,6 +4,7 @@
   import * as sfx from '../app/sfx.ts';
   import { cleanSideWidth, sideWidth } from '../app/side-width.svelte.ts';
   import { TUNING } from '../app/tuning/index.ts';
+  import { uiZoom } from '../app/ui-size.svelte.ts';
   import { tooltip } from './base/tooltip.ts';
 
   const tuning = TUNING.ui.sideWidth;
@@ -52,7 +53,7 @@
   function onPointerMove(event: PointerEvent): void {
     if (!drag || event.pointerId !== drag.pointerId) return;
     // The handle is on the inner edge: a move to the left makes the column wider.
-    const dx = drag.startX - event.clientX;
+    const dx = (drag.startX - event.clientX) / uiZoom();
     // A click with no move keeps the default token.
     if (!drag.moved && Math.abs(dx) < 1) return;
     drag.moved = true;

@@ -296,7 +296,7 @@
     }
 
     /* A narrow window: tighter cells, and the format name moves to the tooltip of the weight. */
-    @media (max-width: 1180px) {
+    @container app (max-width: 1180px) {
       .status {
         gap: var(--space-2);
         padding: 0 var(--space-2);

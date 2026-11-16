@@ -1,6 +1,7 @@
 <script lang="ts">
   import { app } from '../app/state.svelte.ts';
   import { t } from '../app/i18n/index.ts';
+  import { uiZoom } from '../app/ui-size.svelte.ts';
   import { TOOLS, type Hint } from '../app/tools/index.ts';
   import Keys from './base/Keys.svelte';
 
@@ -70,7 +71,7 @@
 
   function onPointerMove(event: PointerEvent): void {
     if (!scroller || !drag || drag.id !== event.pointerId) return;
-    const dx = event.clientX - drag.x;
+    const dx = (event.clientX - drag.x) / uiZoom();
     if (!drag.moved && Math.abs(dx) < 4) return;
     if (!drag.moved) {
       drag.moved = true;

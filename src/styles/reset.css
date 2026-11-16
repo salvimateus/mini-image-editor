@@ -10,7 +10,7 @@
   }
 
   :where(body) {
-    min-height: 100dvh;
+    min-height: var(--view-h);
     line-height: 1.45;
   }
 

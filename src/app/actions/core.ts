@@ -6,6 +6,7 @@ import { app } from '../state.svelte.ts';
 import * as sfx from '../sfx.ts';
 import { DEFAULT_THEME, setTheme } from '../theme.svelte.ts';
 import { TUNING } from '../tuning/index.ts';
+import { uiSize } from '../ui-size.svelte.ts';
 import { pickImageFiles } from './pick-files.ts';
 import type { ActionHandler, ActionHandlers, CoreActionId } from './types.ts';
 
@@ -39,6 +40,14 @@ async function resetSettings(): Promise<void> {
   resetPrefs();
   sfx.play('apply');
   app.toast(t('chrome.resetSettings.done'), 'success');
+}
+
+function sizeUi(run: () => void): ActionHandler {
+  return () => {
+    run();
+    sfx.play('tick');
+    app.toast(t('chrome.uiSize', { value: uiSize.applied }));
+  };
 }
 
 /** The actions of the chrome: files, history, tools, view and colors. */
@@ -96,6 +105,9 @@ export const coreActions: ActionHandlers<CoreActionId> = {
     app.toggleMute();
     if (!app.muted) sfx.play('tick');
   },
+  'view.uiLarger': sizeUi(() => uiSize.step(1)),
+  'view.uiSmaller': sizeUi(() => uiSize.step(-1)),
+  'view.uiReset': sizeUi(() => uiSize.reset()),
 
   'color.swap': () => app.swapColors(),
   'color.reset': () => app.resetColors(),

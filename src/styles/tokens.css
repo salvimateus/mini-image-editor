@@ -123,6 +123,12 @@
     --status-h: 32px;
     --rail-w: 56px;
     /* The default width of the right column; a width that the user drags replaces it, inside TUNING.ui.sideWidth. */
-    --panel-w: clamp(320px, 24vw, 400px);
+    --panel-w: clamp(320px, calc(var(--view-w) * 0.24), 400px);
+    /*
+     * The window size in the layout px of the root. A browser shows a larger interface with the CSS zoom of the root
+     * (src/app/ui-size.svelte.ts sets --ui-zoom with it), and a viewport unit inside it grows by that zoom too.
+     */
+    --view-w: calc(100vw / var(--ui-zoom, 1));
+    --view-h: calc(100dvh / var(--ui-zoom, 1));
   }
 }

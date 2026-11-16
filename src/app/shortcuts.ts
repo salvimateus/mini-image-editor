@@ -49,6 +49,9 @@ export type ActionId =
   | 'view.avatar'
   | 'view.hud'
   | 'view.mute'
+  | 'view.uiLarger'
+  | 'view.uiSmaller'
+  | 'view.uiReset'
   | 'guides.center'
   | 'guides.thirds'
   | 'guides.clear'
@@ -159,6 +162,9 @@ export const SHORTCUTS: readonly ShortcutDef[] = [
   { id: 'view.avatar', combos: [ctrl('o', { shift: true })], label: 'action.view.avatar', group: 'view' },
   { id: 'view.hud', combos: [], label: 'action.view.hud', group: 'view' },
   { id: 'view.mute', combos: [], label: 'action.view.mute', group: 'view' },
+  { id: 'view.uiLarger', combos: [], label: 'action.view.uiLarger', group: 'view' },
+  { id: 'view.uiSmaller', combos: [], label: 'action.view.uiSmaller', group: 'view' },
+  { id: 'view.uiReset', combos: [], label: 'action.view.uiReset', group: 'view' },
   { id: 'guides.center', combos: [], label: 'action.guides.center', group: 'view' },
   { id: 'guides.thirds', combos: [], label: 'action.guides.thirds', group: 'view' },
   { id: 'guides.clear', combos: [], label: 'action.guides.clear', group: 'view' },

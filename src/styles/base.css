@@ -398,8 +398,8 @@
 
   .dialog {
     margin: auto;
-    width: min(480px, calc(100vw - 32px));
-    max-height: calc(100dvh - 32px);
+    width: min(480px, calc(var(--view-w) - 32px));
+    max-height: calc(var(--view-h) - 32px);
     background: var(--surface-1);
     border: 2px solid var(--line-strong);
     border-radius: var(--radius-xl);
@@ -443,7 +443,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    max-width: min(320px, calc(100vw - 16px));
+    max-width: min(320px, calc(var(--view-w) - 16px));
     padding: 6px 10px;
     color: var(--text);
     background: var(--surface-3);

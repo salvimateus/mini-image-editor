@@ -129,7 +129,7 @@
     }
 
     /* A narrow window keeps the eight menus, the document name and the actions on one row. */
-    @media (max-width: 1180px) {
+    @container app (max-width: 1180px) {
       .menu-trigger {
         padding: 0 var(--space-2);
       }
@@ -143,7 +143,10 @@
       display: grid;
       width: max-content;
       min-width: 260px;
-      max-width: calc(100vw - 16px);
+      max-width: calc(var(--view-w) - 16px);
+      /* A short window (or a large interface) scrolls the longest menu instead of cutting its last rows. */
+      max-height: calc(var(--view-h) - var(--header-h) - 12px);
+      overflow-y: auto;
       padding: var(--space-1);
       background: var(--surface-2);
       border: 2px solid var(--line-strong);

@@ -42,7 +42,7 @@
       z-index: 50;
       display: grid;
       gap: var(--space-2);
-      width: min(460px, calc(100vw - 32px));
+      width: min(460px, calc(var(--view-w) - 32px));
       pointer-events: none;
     }
 

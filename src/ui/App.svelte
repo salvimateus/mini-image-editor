@@ -249,8 +249,10 @@
 
 <style>
   @layer components {
+    /* The container of the layout queries: in a browser the CSS zoom of the root does not change a media query. */
     .app {
-      height: 100dvh;
+      container: app / size;
+      height: var(--view-h);
       overflow: hidden;
     }
 

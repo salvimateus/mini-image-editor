@@ -3,6 +3,7 @@ import { keyHud } from '../key-hud.svelte.ts';
 import type { ActionId, ActionSource } from '../shortcuts.ts';
 import * as sfx from '../sfx.ts';
 import { app } from '../state.svelte.ts';
+import { uiSize } from '../ui-size.svelte.ts';
 import { adjustActions } from './adjust.ts';
 import { clipboardActions } from './clipboard.ts';
 import { coreActions } from './core.ts';
@@ -27,10 +28,13 @@ const HANDLERS: Record<ActionId, ActionHandler> = {
 };
 
 /** The actions that work with no open document. Every other handler can count on `app.doc`. */
-const WITHOUT_DOC = new Set<ActionId>(['file.open', 'file.new', 'view.hud', 'view.mute', 'help.shortcuts', 'help.resetSettings', 'help.about']);
+const WITHOUT_DOC = new Set<ActionId>(['file.open', 'file.new', 'view.hud', 'view.mute', 'view.uiLarger', 'view.uiSmaller', 'view.uiReset', 'help.shortcuts', 'help.resetSettings', 'help.about']);
 
 /** False when the action can do nothing now: the menus and buttons show it as disabled. */
 export function actionEnabled(id: ActionId): boolean {
+  if (id === 'view.uiLarger') return uiSize.canGrow;
+  if (id === 'view.uiSmaller') return uiSize.canShrink;
+  if (id === 'view.uiReset') return uiSize.canReset;
   const doc = app.doc;
   if (!doc) return WITHOUT_DOC.has(id);
   if (id === 'edit.undo') return doc.history.canUndo;

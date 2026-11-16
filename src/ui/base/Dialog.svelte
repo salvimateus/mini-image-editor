@@ -51,7 +51,7 @@
   @layer components {
     /* The export dialogs: about 40% wider than a plain dialog (480px), so long file names fit on one line. */
     .dialog-wide {
-      width: min(672px, calc(100vw - 32px));
+      width: min(672px, calc(var(--view-w) - 32px));
     }
   }
 </style>

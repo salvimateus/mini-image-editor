@@ -1,6 +1,7 @@
 import { t, type TextKey } from '../../app/i18n/index.ts';
 import { keyHud } from '../../app/key-hud.svelte.ts';
 import { TUNING } from '../../app/tuning/index.ts';
+import { localRect, localViewport } from '../../app/ui-size.svelte.ts';
 
 export interface TooltipOptions {
   text: string;
@@ -57,15 +58,16 @@ function fill(element: HTMLDivElement, options: TooltipOptions): void {
 /** Above the element when it fits, else below; always inside the window. */
 function place(element: HTMLDivElement, target: HTMLElement): void {
   const { gapPx, edgePx } = TUNING.ui.tooltip;
-  const box = target.getBoundingClientRect();
+  const box = localRect(target.getBoundingClientRect());
+  const view = localViewport();
   const width = element.offsetWidth;
   const height = element.offsetHeight;
-  const maxX = window.innerWidth - edgePx - width;
+  const maxX = view.width - edgePx - width;
   const x = Math.max(edgePx, Math.min(maxX, box.left + box.width / 2 - width / 2));
   const above = box.top - gapPx - height;
   const below = box.bottom + gapPx;
   const fitsAbove = above >= edgePx;
-  const y = fitsAbove ? above : Math.min(below, window.innerHeight - edgePx - height);
+  const y = fitsAbove ? above : Math.min(below, view.height - edgePx - height);
   element.dataset.side = fitsAbove ? 'top' : 'bottom';
   element.style.translate = `${Math.round(x)}px ${Math.round(y)}px`;
 }

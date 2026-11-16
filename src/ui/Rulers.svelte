@@ -10,6 +10,7 @@
   import { app } from '../app/state.svelte.ts';
   import { theme } from '../app/theme.svelte.ts';
   import { TUNING } from '../app/tuning/index.ts';
+  import { localRect, localViewport, uiZoom } from '../app/ui-size.svelte.ts';
   import ToggleSwitch from './base/ToggleSwitch.svelte';
   import { tooltip } from './base/tooltip.ts';
   import { cleanGuidePos, guideKept, setRulerGuide } from './overlays/guides.ts';
@@ -34,7 +35,7 @@
   let cssH = 0;
   let dpr = 1;
   let raf = 0;
-  /** The pointer in client px while it is over the stage, or null. */
+  /** The pointer in layout px (client px under the root zoom) while it is over the stage, or null. */
   let pointer: { x: number; y: number } | null = null;
   let dragging = false;
   let settingsOpen = $state(false);
@@ -81,8 +82,8 @@
     const cell = stageCell();
     if (stage && doc && cell) {
       const camera = stage.camera;
-      const own = canvas.getBoundingClientRect();
-      const cellBox = cell.getBoundingClientRect();
+      const own = localRect(canvas.getBoundingClientRect());
+      const cellBox = localRect(cell.getBoundingClientRect());
       const offset = horizontal ? cellBox.left - own.left : cellBox.top - own.top;
       const pan = (horizontal ? camera.panX : camera.panY) + offset;
       const zoom = camera.zoom;
@@ -220,7 +221,7 @@
       if (!box) return;
       cssW = box.width;
       cssH = box.height;
-      dpr = Math.min(TUNING.stage.maxDpr, window.devicePixelRatio || 1);
+      dpr = Math.min(TUNING.stage.maxDpr, (window.devicePixelRatio || 1) * uiZoom());
       canvas.width = Math.max(1, Math.round(cssW * dpr));
       canvas.height = Math.max(1, Math.round(cssH * dpr));
       draw();
@@ -232,7 +233,7 @@
       if (!cell) return;
       const box = cell.getBoundingClientRect();
       const inside = event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom;
-      const next = inside || dragging ? { x: event.clientX, y: event.clientY } : null;
+      const next = inside || dragging ? { x: event.clientX / uiZoom(), y: event.clientY / uiZoom() } : null;
       if (next === null && pointer === null) return;
       pointer = next;
       schedule();
@@ -253,8 +254,8 @@
     const cell = stageCell();
     if (!stage || !cell) return null;
     const box = cell.getBoundingClientRect();
-    const sx = event.clientX - box.left;
-    const sy = event.clientY - box.top;
+    const sx = (event.clientX - box.left) / uiZoom();
+    const sy = (event.clientY - box.top) / uiZoom();
     const point = stage.screenToDoc(sx, sy);
     const raw = guideAxis === 'x' ? point.x : point.y;
     const snapped = snapValueLive(raw, guideAxis, event.ctrlKey || event.metaKey, (target) => target.kind === 'stage-edge' || target.kind === 'stage-center');
@@ -296,8 +297,8 @@
       settingsOpen = false;
       return;
     }
-    const box = settingsButton?.getBoundingClientRect();
-    if (box) popoverPos = { top: Math.round(box.bottom + 6), right: Math.round(window.innerWidth - box.right) };
+    const box = settingsButton ? localRect(settingsButton.getBoundingClientRect()) : null;
+    if (box) popoverPos = { top: Math.round(box.bottom + 6), right: Math.round(localViewport().width - box.right) };
     settingsOpen = true;
     sfx.play('tick');
   }

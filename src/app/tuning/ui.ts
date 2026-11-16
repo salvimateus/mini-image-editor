@@ -65,6 +65,12 @@ export const UI_TUNING = {
   bucketDefaults: { tolerance: 32, contiguous: true },
   viewDefaults: { rulers: false, guides: true, grid: false, snap: true, avatar: false, hud: true },
   exportDefaults: { format: 'png', jpegQuality: 92 },
+  /**
+   * The interface sizes of the View menu, in percent. A size above 100 applies only while the window still holds the
+   * editor at `layoutMinPx` (the minimum of `.editor` in App.svelte) in CSS px of that size; public/ui-size-init.js
+   * repeats both values.
+   */
+  uiSize: { steps: [80, 90, 100, 110, 125, 150], layoutMinPx: { w: 960, h: 640 } },
   /** The zoom levels of the status bar menu, 1 = 100%. */
   zoomPresets: [0.5, 1, 2, 4],
   /** The presets of the new image dialog, in px. */

@@ -2,6 +2,7 @@
   import { toCss, toHex } from '../../core/color.ts';
   import type { Rgba } from '../../core/types.ts';
   import { t } from '../../app/i18n/index.ts';
+  import { localRect, localViewport } from '../../app/ui-size.svelte.ts';
   import * as sfx from '../../app/sfx.ts';
   import ColorPicker from './ColorPicker.svelte';
 
@@ -31,12 +32,13 @@
   /** Below the button when it fits, else above; always inside the window. */
   function place(): void {
     if (!button || !pop) return;
-    const box = button.getBoundingClientRect();
+    const box = localRect(button.getBoundingClientRect());
+    const view = localViewport();
     const width = pop.offsetWidth;
     const height = pop.offsetHeight;
-    const x = Math.max(EDGE_PX, Math.min(window.innerWidth - EDGE_PX - width, box.left));
+    const x = Math.max(EDGE_PX, Math.min(view.width - EDGE_PX - width, box.left));
     const below = box.bottom + GAP_PX;
-    const y = below + height <= window.innerHeight - EDGE_PX ? below : Math.max(EDGE_PX, box.top - GAP_PX - height);
+    const y = below + height <= view.height - EDGE_PX ? below : Math.max(EDGE_PX, box.top - GAP_PX - height);
     pop.style.translate = `${Math.round(x)}px ${Math.round(y)}px`;
   }
 

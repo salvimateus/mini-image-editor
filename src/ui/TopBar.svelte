@@ -61,6 +61,10 @@
         null,
         'view.hud',
         'view.mute',
+        null,
+        'view.uiLarger',
+        'view.uiSmaller',
+        'view.uiReset',
       ],
     },
     { id: 'help', label: 'menu.help', items: ['help.shortcuts', null, 'help.resetSettings', null, 'help.about'] },
@@ -193,7 +197,7 @@
       margin-left: var(--space-2);
     }
 
-    @media (max-width: 1180px) {
+    @container app (max-width: 1180px) {
       .topbar {
         gap: var(--space-1);
         padding: 0 var(--space-2);
@@ -215,7 +219,7 @@
     }
 
     /* The label goes before the menus run out of room; the icon, the tooltip and the accessible name stay. */
-    @media (max-width: 1060px) {
+    @container app (max-width: 1060px) {
       .copy-image {
         padding: 0 var(--space-2);
       }

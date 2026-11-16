@@ -132,3 +132,31 @@ export async function setWindowTitle(text: string): Promise<void> {
     // The title is a convenience: the app works the same with the old one.
   }
 }
+
+/** The zoom of the whole desktop webview, 1 = 100%; it scales the layout px like a browser zoom. No-op in a browser. */
+export async function setWebviewZoom(factor: number): Promise<void> {
+  if (!isDesktop) return;
+  try {
+    const { getCurrentWebview } = await import('@tauri-apps/api/webview');
+    await getCurrentWebview().setZoom(factor);
+  } catch {
+    // The interface keeps its old size: the app works the same.
+  }
+}
+
+/**
+ * The inner size of the desktop window in CSS px at a webview zoom of 100%, so it does not change with that zoom.
+ * Null in a browser or when the native call fails.
+ */
+export async function windowBaseSize(): Promise<{ width: number; height: number } | null> {
+  if (!isDesktop) return null;
+  try {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    const win = getCurrentWindow();
+    const [size, factor] = await Promise.all([win.innerSize(), win.scaleFactor()]);
+    const logical = size.toLogical(factor);
+    return { width: logical.width, height: logical.height };
+  } catch {
+    return null;
+  }
+}
