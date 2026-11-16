@@ -27,6 +27,10 @@ export const SELECT_TUNING = {
   thumb: { sizePx: 40, delayMs: 260, samples: 2 },
   /** The pop of a new row of the Layers panel. */
   rowPopMs: 240,
-  /** A row drag in the Layers panel starts after this distance, in CSS px. */
-  rowDragPx: 4,
+  /**
+   * Drag to reorder in the Layers panel. A press becomes a drag after `startPx` (CSS px); the lifted row grows to
+   * `liftScale`; the other rows slide in `shiftMs` and the dropped row settles in `settleMs`. Near an edge of the
+   * list (`edgePx`) the list scrolls, up to `scrollPxPerFrame` at the edge.
+   */
+  rowDrag: { startPx: 4, liftScale: 1.03, shiftMs: 160, settleMs: 220, edgePx: 32, scrollPxPerFrame: 12 },
 } as const;

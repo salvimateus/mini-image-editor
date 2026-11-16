@@ -14,6 +14,7 @@
   import Sparkles from '@lucide/svelte/icons/sparkles';
   import Trash from '@lucide/svelte/icons/trash';
   import Type from '@lucide/svelte/icons/type';
+  import { tick, untrack } from 'svelte';
   import { backOut } from 'svelte/easing';
   import { actionEnabled, runAction } from '../../app/actions/index.ts';
   import type { EditorDoc } from '../../app/doc.svelte.ts';
@@ -44,8 +45,17 @@
   let draft = $state('');
   let list = $state<HTMLOListElement | null>(null);
 
-  interface RowDrag { id: number; pointerId: number; startY: number; from: number; moved: boolean; slot: number | null }
-  let rowDrag = $state<RowDrag | null>(null);
+  /** A press on a row; it becomes a drag after a short distance. `ids` is the row order at the press. */
+  interface RowDrag { id: number; pointerId: number; row: HTMLElement; startY: number; startScroll: number; clientY: number; from: number; ids: string; step: number; moved: boolean }
+  /** What the rows draw during a drag: the offset of the lifted row and the display index where it would land. */
+  interface SortView { id: number; from: number; target: number; dy: number; step: number }
+
+  let rowDrag: RowDrag | null = null;
+  let sortView = $state.raw<SortView | null>(null);
+  /** The dropped row keeps its lifted look until it settles in its slot. */
+  let settlingId = $state<number | null>(null);
+  let settleAnims: Animation[] = [];
+  let scrollFrame = 0;
 
   // Thumbnails follow the pixels a short time after a change, at most once in each delay.
   $effect(() => {
@@ -229,55 +239,196 @@
 
   // ----- drag to reorder -----
 
-  /** The insertion slot (0 = above the top row) under the pointer, or null when the drop would change nothing. */
-  function slotAt(clientY: number, from: number): number | null {
-    const items = list ? Array.from(list.querySelectorAll<HTMLElement>('.layer-row')) : [];
-    let slot = items.length;
-    for (let i = 0; i < items.length; i++) {
-      const box = items[i].getBoundingClientRect();
-      if (clientY < box.top + box.height / 2) {
-        slot = i;
-        break;
-      }
+  const rowIds = (): string => rows.map((layer) => layer.id).join(',');
+
+  function liftScale(): number {
+    return prefersReducedMotion() ? 1 : TUNING.select.rowDrag.liftScale;
+  }
+
+  function rowTransform(id: number, index: number): string | undefined {
+    const view = sortView;
+    if (!view) return undefined;
+    if (id === view.id) return `translateY(${view.dy}px) scale(${liftScale()})`;
+    if (view.from < view.target && index > view.from && index <= view.target) return `translateY(${-view.step}px)`;
+    if (view.target < view.from && index >= view.target && index < view.from) return `translateY(${view.step}px)`;
+    return undefined;
+  }
+
+  function rowElements(): HTMLElement[] {
+    return list ? Array.from(list.querySelectorAll<HTMLElement>('.layer-row')) : [];
+  }
+
+  function stopSettle(): void {
+    for (const anim of settleAnims) anim.finish();
+    settleAnims = [];
+  }
+
+  /** The lifted row follows the pointer inside the list; the target slot is the nearest row position. */
+  function updateView(current: RowDrag): void {
+    const count = current.ids.split(',').length;
+    const scroll = list ? list.scrollTop - current.startScroll : 0;
+    const raw = current.clientY - current.startY + scroll;
+    const dy = Math.min((count - 1 - current.from) * current.step, Math.max(-current.from * current.step, raw));
+    const target = Math.min(count - 1, Math.max(0, Math.round(current.from + dy / current.step)));
+    if (sortView && sortView.target !== target) sfx.play('tick');
+    sortView = { id: current.id, from: current.from, target, dy, step: current.step };
+  }
+
+  function autoScroll(): void {
+    scrollFrame = 0;
+    const current = rowDrag;
+    if (!current?.moved || !list) return;
+    const box = list.getBoundingClientRect();
+    const { edgePx, scrollPxPerFrame } = TUNING.select.rowDrag;
+    let speed = 0;
+    if (current.clientY < box.top + edgePx) speed = -Math.min(1, (box.top + edgePx - current.clientY) / edgePx);
+    else if (current.clientY > box.bottom - edgePx) speed = Math.min(1, (current.clientY - box.bottom + edgePx) / edgePx);
+    if (speed !== 0) {
+      const before = list.scrollTop;
+      list.scrollTop = before + speed * scrollPxPerFrame;
+      if (list.scrollTop !== before) updateView(current);
     }
-    return slot === from || slot === from + 1 ? null : slot;
+    scrollFrame = requestAnimationFrame(autoScroll);
+  }
+
+  /** FLIP: each row starts at the place where it was drawn and slides to its new place. */
+  async function settle(centers: Map<number, number>, liftedId: number): Promise<void> {
+    await tick();
+    if (!list || prefersReducedMotion()) {
+      settlingId = null;
+      return;
+    }
+    const style = getComputedStyle(list);
+    const { shiftMs, settleMs } = TUNING.select.rowDrag;
+    let liftedAnim: Animation | null = null;
+    for (const row of rowElements()) {
+      const id = Number(row.dataset.id);
+      const before = centers.get(id);
+      if (before === undefined) continue;
+      const box = row.getBoundingClientRect();
+      const dy = before - (box.top + box.height / 2);
+      const lifted = id === liftedId;
+      if (!lifted && Math.abs(dy) < 0.5) continue;
+      const anim = row.animate([{ transform: `translateY(${dy}px)${lifted ? ` scale(${liftScale()})` : ''}` }, { transform: 'none' }], {
+        duration: lifted ? settleMs : shiftMs,
+        easing: style.getPropertyValue(lifted ? '--ease-out' : '--ease-sym').trim() || 'ease-out',
+      });
+      settleAnims.push(anim);
+      if (lifted) liftedAnim = anim;
+    }
+    const done = () => {
+      if (settlingId === liftedId) settlingId = null;
+    };
+    if (liftedAnim) liftedAnim.finished.then(done, done);
+    else done();
+  }
+
+  /** Ends a drag; `commit` moves the layer when its slot changed. One move is one undo step. */
+  function endDrag(commit: boolean): void {
+    const current = rowDrag;
+    const view = sortView;
+    rowDrag = null;
+    cancelAnimationFrame(scrollFrame);
+    scrollFrame = 0;
+    if (!current?.moved || !view) {
+      sortView = null;
+      return;
+    }
+    if (current.row.hasPointerCapture(current.pointerId)) current.row.releasePointerCapture(current.pointerId);
+    const centers = new Map<number, number>();
+    for (const row of rowElements()) {
+      const box = row.getBoundingClientRect();
+      centers.set(Number(row.dataset.id), box.top + box.height / 2);
+    }
+    settlingId = current.id;
+    sortView = null;
+    if (commit && doc && view.target !== view.from && rowIds() === current.ids) {
+      doc.moveLayer(current.id, doc.layers.length - 1 - view.target);
+      sfx.play('layer');
+    }
+    void settle(centers, current.id);
   }
 
   function onRowDown(event: PointerEvent, layer: Layer, index: number): void {
-    if (event.button !== 0 || editingId !== null) return;
+    if (event.button !== 0 || editingId !== null || rowDrag) return;
     if ((event.target as HTMLElement).closest('.row-eye, .row-edit, input')) return;
-    rowDrag = { id: layer.id, pointerId: event.pointerId, startY: event.clientY, from: index, moved: false, slot: null };
+    rowDrag = {
+      id: layer.id,
+      pointerId: event.pointerId,
+      row: event.currentTarget as HTMLElement,
+      startY: event.clientY,
+      startScroll: list?.scrollTop ?? 0,
+      clientY: event.clientY,
+      from: index,
+      ids: rowIds(),
+      step: 0,
+      moved: false,
+    };
   }
 
   function onRowMove(event: PointerEvent): void {
     const current = rowDrag;
     if (!current || current.pointerId !== event.pointerId) return;
+    current.clientY = event.clientY;
     if (!current.moved) {
-      if (Math.abs(event.clientY - current.startY) < TUNING.select.rowDragPx) return;
+      if (Math.abs(event.clientY - current.startY) < TUNING.select.rowDrag.startPx) return;
+      stopSettle();
+      settlingId = null;
+      const items = rowElements();
+      current.step = items.length > 1 ? items[1].offsetTop - items[0].offsetTop : current.row.offsetHeight;
+      current.moved = true;
       // The capture starts with the drag, so a plain click or double-click keeps its own target.
-      (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+      current.row.setPointerCapture(event.pointerId);
+      scrollFrame = requestAnimationFrame(autoScroll);
     }
-    rowDrag = { ...current, moved: true, slot: slotAt(event.clientY, current.from) };
+    event.preventDefault();
+    updateView(current);
   }
 
   function onRowUp(event: PointerEvent, layer: Layer): void {
     const current = rowDrag;
     if (!current || current.pointerId !== event.pointerId) return;
-    rowDrag = null;
     if (!current.moved) {
+      rowDrag = null;
       select(layer);
       return;
     }
-    if (current.slot === null || !doc) return;
-    const count = doc.layers.length;
-    const display = current.slot > current.from ? current.slot - 1 : current.slot;
-    doc.moveLayer(current.id, count - 1 - display);
-    sfx.play('layer');
+    endDrag(true);
   }
 
-  function onRowCancel(): void {
-    rowDrag = null;
+  /** A lost capture or a cancelled pointer drops the drag; the rows slide back. */
+  function onRowCancel(event: PointerEvent): void {
+    if (rowDrag?.pointerId === event.pointerId) endDrag(false);
   }
+
+  // Escape cancels a drag before any other key handler sees it.
+  const sorting = $derived(sortView !== null);
+
+  $effect(() => {
+    if (!sorting) return;
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      endDrag(false);
+      sfx.play('cancel');
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  });
+
+  // A change of the layer order or of the document under a drag (undo, a new layer, a tab switch) drops it.
+  $effect(() => {
+    const ids = rowIds();
+    untrack(() => {
+      if (rowDrag && rowDrag.ids !== ids) endDrag(false);
+    });
+  });
+
+  $effect(() => () => {
+    cancelAnimationFrame(scrollFrame);
+    stopSettle();
+  });
 
   function actionDisabled(id: ActionId): boolean {
     return !actionEnabled(id) || (id !== 'layer.new' && id !== 'layer.addImage' && !active);
@@ -288,7 +439,13 @@
   <section class="side-panel layers-panel" aria-labelledby="panel-layers-title">
     <h2 id="panel-layers-title" class="section-title">{t('chrome.panel.layers')}</h2>
 
-    <ol class="layer-list" aria-label={t('select.layers.list')} bind:this={list}>
+    <ol
+      class="layer-list"
+      class:is-sorting={sorting}
+      aria-label={t('select.layers.list')}
+      style:--row-shift-ms={`${TUNING.select.rowDrag.shiftMs}ms`}
+      bind:this={list}
+    >
       {#each rows as layer, index (layer.id)}
         {@const isActive = layer.id === doc.activeId}
         {@const meta = editorMeta(layer)}
@@ -296,15 +453,16 @@
           class="layer-row"
           class:is-active={isActive}
           class:is-hidden={!layer.visible}
-          class:is-dragging={rowDrag?.id === layer.id && rowDrag.moved}
-          class:drop-above={rowDrag?.slot === index}
-          class:drop-below={rowDrag?.slot === rows.length && index === rows.length - 1}
+          class:is-lifted={sortView?.id === layer.id || settlingId === layer.id}
+          data-id={layer.id}
+          style:transform={rowTransform(layer.id, index)}
           aria-current={isActive ? 'true' : undefined}
           in:pop
           onpointerdown={(event) => onRowDown(event, layer, index)}
           onpointermove={onRowMove}
           onpointerup={(event) => onRowUp(event, layer)}
           onpointercancel={onRowCancel}
+          onlostpointercapture={onRowCancel}
           ondblclick={(event) => onRowDblClick(event, layer)}
         >
           <button
@@ -464,28 +622,39 @@
         border-color: var(--primary-edge);
       }
 
-      &.is-dragging {
-        opacity: 0.55;
-      }
-
-      &.drop-above::before,
-      &.drop-below::after {
+      /* The lift shadow fades in and out on its own layer, so the row never animates box-shadow. */
+      &::after {
         content: '';
         position: absolute;
-        left: 6px;
-        right: 6px;
-        height: 3px;
-        background: var(--primary);
-        border-radius: var(--radius-pill);
+        inset: -2px;
+        border-radius: inherit;
+        box-shadow: 0 6px 0 var(--depth);
+        opacity: 0;
         pointer-events: none;
+        transition: opacity var(--dur-pop) var(--ease-sym);
       }
 
-      &.drop-above::before {
-        top: -5px;
-      }
+      &.is-lifted {
+        z-index: 1;
+        cursor: grabbing;
 
-      &.drop-below::after {
-        bottom: -5px;
+        &::after {
+          opacity: 1;
+        }
+      }
+    }
+
+    /* During a drag the other rows slide out of the way; the lifted row follows the pointer with no delay. */
+    .layer-list.is-sorting {
+      cursor: grabbing;
+      user-select: none;
+
+      & .layer-row:not(.is-lifted) {
+        transition:
+          transform var(--row-shift-ms) var(--ease-sym),
+          background-color var(--dur-hover) var(--ease-sym),
+          border-color var(--dur-hover) var(--ease-sym),
+          opacity var(--dur-hover) var(--ease-sym);
       }
     }
 
