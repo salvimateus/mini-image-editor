@@ -5,8 +5,6 @@ export const SHAPES_TUNING = {
   /** The smallest side of a rectangle or an ellipse, the shortest arrow and the smallest step, in document px. */
   minPx: 4,
   minArrowPx: 8,
-  /** A click with no drag makes a shape of this size (document px), centered at the click. */
-  clickSize: { w: 200, h: 120, arrow: 160 },
   /** A press that moves less than this (screen px) is a click, not a drag. */
   clickSlopPx: 3,
   /** Shift holds an arrow to steps of this angle, in degrees. */

@@ -63,18 +63,6 @@ function dragShape(c: Creation, p: StagePointer): { spec: ShapeSpec; at: Point }
   return { spec, at: placeAt(spec, { x: x0, y: y0 }) };
 }
 
-/** A click with no drag: a shape of the default size, centered at the click. */
-function clickShape(c: Creation): { spec: ShapeSpec; at: Point } {
-  const size = TUNING.shapes.clickSize;
-  const { x, y } = c.start;
-  if (isArrowKind(c.kind)) {
-    const spec = shapeSettings.arrowSpec(c.kind, size.arrow, 0);
-    return { spec, at: placeAt(spec, { x: x - size.arrow / 2, y }) };
-  }
-  const spec = shapeSettings.boxSpec(c.kind === 'ellipse' ? 'ellipse' : 'rect', size.w, size.h);
-  return { spec, at: placeAt(spec, { x: x - size.w / 2, y: y - size.h / 2 }) };
-}
-
 function tooShort(spec: ShapeSpec): boolean {
   return spec.kind === 'arrow' && Math.hypot(spec.dx, spec.dy) < TUNING.shapes.minArrowPx;
 }
@@ -86,11 +74,11 @@ function endCreation(): void {
   clearSnapFeedback();
 }
 
+/** Only a drag sets the size of a new shape: a click, or an arrow too short to see, makes nothing. */
 function commit(c: Creation, p: StagePointer): void {
-  let shape = c.moved ? (c.last ?? dragShape(c, p)) : clickShape(c);
-  if (tooShort(shape.spec)) shape = clickShape(c);
+  const shape = c.moved ? (c.last ?? dragShape(c, p)) : null;
   endCreation();
-  if (app.doc !== c.doc) return;
+  if (!shape || tooShort(shape.spec) || app.doc !== c.doc) return;
   try {
     const image = renderShapeLayer(shape.spec);
     const layer = createShapeLayer(shapeLayerName(shape.spec), shape.spec, image, shape.at.x, shape.at.y);
@@ -113,7 +101,6 @@ export const shapeTool: ToolController = {
     { keys: 'Drag', text: 'shapes.hint.draw' },
     { keys: 'Shift+Drag', text: 'shapes.hint.keep' },
     { keys: 'Ctrl+Drag', text: 'shapes.hint.noSnap' },
-    { keys: 'Click', text: 'shapes.hint.click' },
     { keys: 'Drag', text: 'shapes.hint.move' },
   ],
   cursor(p) {
