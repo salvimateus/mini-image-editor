@@ -19,6 +19,7 @@
   import ExportDialog from './dialogs/ExportDialog.svelte';
   import ImageSizeDialog from './dialogs/ImageSizeDialog.svelte';
   import NewImageDialog from './dialogs/NewImageDialog.svelte';
+  import NewTabDialog from './dialogs/NewTabDialog.svelte';
   import ShortcutsDialog from './dialogs/ShortcutsDialog.svelte';
   import EditorStage from './EditorStage.svelte';
   import HintBar from './HintBar.svelte';
@@ -53,6 +54,8 @@
   }
 
   function onDragOver(event: DragEvent): void {
+    // A drop zone below (the stage, the New tab dialog) already took the drag and set its own effect.
+    if (event.defaultPrevented) return;
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = hasFiles(event) && !dialogOpen() ? 'copy' : 'none';
   }
@@ -79,7 +82,7 @@
     return target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
   }
 
-  /** The welcome screen takes its own paste; in the editor the copy of the app, or an image, becomes a layer. */
+  /** The welcome screen and the New tab dialog take their own paste; in the editor the copy of the app, or an image, becomes a layer. */
   function onPaste(event: ClipboardEvent): void {
     if (!app.doc || dialogOpen() || isEditable(event.target)) return;
     if (heldCopy()) {
@@ -234,6 +237,7 @@
 </main>
 
 <NewImageDialog />
+<NewTabDialog />
 <ShortcutsDialog />
 <AboutDialog />
 <CanvasSizeDialog />

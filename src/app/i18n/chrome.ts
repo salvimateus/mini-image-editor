@@ -22,6 +22,7 @@ export const ptBR = {
 
   'action.file.open': 'Abrir imagem…',
   'action.file.new': 'Nova imagem…',
+  'action.file.newTab': 'Nova aba…',
   'action.file.export': 'Exportar…',
   'action.file.close': 'Fechar imagem',
   'action.edit.undo': 'Desfazer',
@@ -102,7 +103,7 @@ export const ptBR = {
   'chrome.dirty': 'Há alterações não exportadas',
   'chrome.tabs.label': 'Imagens abertas',
   'chrome.tabs.close': 'Fechar {name}',
-  'chrome.tabs.open': 'Abrir imagem em nova aba',
+  'chrome.tabs.new': 'Nova aba',
   'chrome.toolRail': 'Ferramentas',
   'chrome.options': 'Opções da ferramenta',
   'chrome.noOptions': 'Esta ferramenta não tem opções.',
@@ -169,6 +170,13 @@ export const ptBR = {
   'newImage.invalid': 'Use de 1 a {max} px por lado e no máximo {mp} megapixels.',
   'newImage.create': 'Criar',
 
+  'newTab.title': 'Nova aba',
+  'newTab.zone': 'Cole uma imagem com [[Ctrl+V]] ou solte um arquivo aqui',
+  'newTab.zoneRelease': 'Pode soltar!',
+  'newTab.open': 'Abrir arquivo…',
+  'newTab.paste': 'Colar',
+  'newTab.blank': 'Imagem em branco…',
+
   'shortcuts.title': 'Atalhos do teclado',
   'shortcuts.intro': 'Os atalhos também aparecem nos menus e nas dicas dos botões.',
   'shortcuts.group.file': 'Arquivo',
@@ -221,6 +229,7 @@ export const en: Record<keyof typeof ptBR, string> = {
 
   'action.file.open': 'Open image…',
   'action.file.new': 'New image…',
+  'action.file.newTab': 'New tab…',
   'action.file.export': 'Export…',
   'action.file.close': 'Close image',
   'action.edit.undo': 'Undo',
@@ -300,7 +309,7 @@ export const en: Record<keyof typeof ptBR, string> = {
   'chrome.dirty': 'There are changes that are not exported',
   'chrome.tabs.label': 'Open images',
   'chrome.tabs.close': 'Close {name}',
-  'chrome.tabs.open': 'Open an image in a new tab',
+  'chrome.tabs.new': 'New tab',
   'chrome.toolRail': 'Tools',
   'chrome.options': 'Tool options',
   'chrome.noOptions': 'This tool has no options.',
@@ -366,6 +375,13 @@ export const en: Record<keyof typeof ptBR, string> = {
   'newImage.bg.black': 'Black',
   'newImage.invalid': 'Use 1 to {max} px a side and at most {mp} megapixels.',
   'newImage.create': 'Create',
+
+  'newTab.title': 'New tab',
+  'newTab.zone': 'Paste an image with [[Ctrl+V]] or drop a file here',
+  'newTab.zoneRelease': 'Drop it!',
+  'newTab.open': 'Open file…',
+  'newTab.paste': 'Paste',
+  'newTab.blank': 'Blank image…',
 
   'shortcuts.title': 'Keyboard shortcuts',
   'shortcuts.intro': 'Shortcuts also show in the menus and in the button tooltips.',

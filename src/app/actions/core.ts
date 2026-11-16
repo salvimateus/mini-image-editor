@@ -53,6 +53,9 @@ export const coreActions: ActionHandlers<CoreActionId> = {
   'file.new': () => {
     if (app.canOpenDocument()) app.openDialog('new-image');
   },
+  'file.newTab': () => {
+    if (app.canOpenDocument()) app.openDialog('new-tab');
+  },
   'file.close': () => void app.closeDocument(),
   'edit.undo': () => app.undo(),
   'edit.redo': () => app.redo(),

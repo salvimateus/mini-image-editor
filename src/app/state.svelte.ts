@@ -3,7 +3,7 @@ import { SKETCH_PRESET_IDS, type SketchPresetId } from '../core/params/paint.ts'
 import { CoreError, errorCode } from '../core/errors.ts';
 import { FORMAT_INFO } from '../core/formats.ts';
 import { PARAMS } from '../core/params/index.ts';
-import { createRaster } from '../core/raster.ts';
+import { cloneRaster, createRaster } from '../core/raster.ts';
 import type { ExportFormat, RasterImage, Rgba, SvgSpec } from '../core/types.ts';
 import type { StageApi, StagePointer } from '../ui/stage-renderer.ts';
 import { track } from './analytics.ts';
@@ -54,7 +54,7 @@ export type BrushMap = Record<BrushToolId, BrushSettings> & { sketch: SketchSett
 /** The brush tools that offer the square tip; the others stay round. */
 export const SHAPED_BRUSHES: ReadonlySet<BrushToolId> = new Set<BrushToolId>(['brush', 'eraser', 'highlighter']);
 export type PanelId = 'none' | 'hue-saturation' | 'levels' | 'sharpen' | 'vignette' | 'text' | 'frame';
-export type DialogId = 'none' | 'new-image' | 'canvas-size' | 'image-size' | 'export' | 'shortcuts' | 'about';
+export type DialogId = 'none' | 'new-image' | 'canvas-size' | 'image-size' | 'export' | 'shortcuts' | 'about' | 'new-tab';
 export interface ViewFlags { rulers: boolean; guides: boolean; grid: boolean; snap: boolean; avatar: boolean; hud: boolean }
 export interface BucketSettings { tolerance: number; contiguous: boolean }
 export interface CropRequest { ratioW: number; ratioH: number; mode: 'crop' | 'expand' }
@@ -683,6 +683,16 @@ class AppState {
     this.openDocument(new EditorDoc({ width: w, height: h, name: this.tabName(t('chrome.untitled')), layers: [layer] }));
     sfx.play('open');
     this.warnIfLarge(w, h);
+  }
+
+  /** Opens a copy of the pixels as a new tab with one layer, at the image size. App-made names get a number. */
+  openImage(image: RasterImage, name: string): void {
+    if (!this.canOpenDocument()) return;
+    const tab = this.tabName(name);
+    const layer = createRasterLayer(tab, cloneRaster(image));
+    this.openDocument(new EditorDoc({ width: image.width, height: image.height, name: tab, layers: [layer] }));
+    sfx.play('open');
+    this.warnIfLarge(image.width, image.height);
   }
 
   /**

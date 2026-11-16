@@ -4,6 +4,7 @@ import type { ToolId } from './tools/types.ts';
 export type ActionId =
   | 'file.open'
   | 'file.new'
+  | 'file.newTab'
   | 'file.export'
   | 'file.close'
   | 'edit.undo'
@@ -82,6 +83,7 @@ const ctrlAlt = (letter: string): KeyCombo => ({ code: `Key${letter.toUpperCase(
 export const SHORTCUTS: readonly ShortcutDef[] = [
   { id: 'file.open', combos: [ctrl('o')], label: 'action.file.open', group: 'file' },
   { id: 'file.new', combos: [ctrl('n')], label: 'action.file.new', group: 'file' },
+  { id: 'file.newTab', combos: [], label: 'action.file.newTab', group: 'file' },
   { id: 'file.export', combos: [ctrl('s')], label: 'action.file.export', group: 'file', whileTyping: true },
   { id: 'file.close', combos: [], label: 'action.file.close', group: 'file' },
 

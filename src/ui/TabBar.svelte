@@ -16,7 +16,7 @@
   const tabs = new Map<EditorDoc, HTMLButtonElement>();
 
   const stopDoc = $derived(focusDoc && app.docs.includes(focusDoc) ? focusDoc : app.doc);
-  const openText = $derived(app.canOpenTab ? t('chrome.tabs.open') : t('toast.tabLimit', { max: PARAMS.limits.maxDocuments }));
+  const openText = $derived(app.canOpenTab ? t('chrome.tabs.new') : t('toast.tabLimit', { max: PARAMS.limits.maxDocuments }));
 
   function register(node: HTMLButtonElement, doc: EditorDoc) {
     tabs.set(doc, node);
@@ -142,7 +142,7 @@
     aria-label={openText}
     aria-disabled={!app.canOpenTab}
     use:tooltip={{ text: openText }}
-    onclick={() => runAction('file.open', 'pointer')}
+    onclick={() => runAction('file.newTab', 'pointer')}
   >
     <Plus size={18} strokeWidth={2.5} />
   </button>
