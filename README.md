@@ -361,7 +361,7 @@ Size limits: 16384 px for each side and 50 megapixels for an image. WebP permits
 
 ## Status
 
-- Version 0.3.0.
+- Version 0.4.0.
 - The Windows exe is the main target. The Linux build is prepared, but not tested.
 - Get the Windows exe of each version from the [releases page](https://github.com/salvimateus/mini-image-editor/releases/latest).
 - Use the web version in your browser at [mini-image-editor-mu.vercel.app](https://mini-image-editor-mu.vercel.app). Each change on `main` updates it.
