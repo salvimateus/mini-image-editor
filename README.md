@@ -67,8 +67,18 @@ The six color themes.
 - Move the view with Space and a drag, the middle mouse button or the hand tool.
 - The status bar shows the size in px, the ratio, the zoom and the estimated export size.
 - Undo and redo for each edit.
-- A confirmation before close, open or new when the image has edits that you did not export.
+- A confirmation before you close an image that has edits that you did not export.
 - A warning when an image is larger than 25 megapixels.
+
+### Tabs
+
+- New and Open add a tab above the stage, so you can edit more than one image at a time.
+- Click a tab to show its image. Each tab keeps its own zoom.
+- The close button of a tab, or a middle click on the tab, closes it. When the image has edits that you did not export, the app asks first.
+- The "+" button at the end of the tabs opens an image in a new tab.
+- You can open up to 8 tabs.
+- When you close the app and a tab has edits that you did not export, the app asks first.
+- Tabs operate in the web version and in the desktop app.
 
 ### Selection and layers
 
@@ -83,7 +93,9 @@ The six color themes.
 - Ctrl+X cuts the selection: it copies and erases the pixels in one undo step. It operates only on normal pixel layers, like Erase.
 - Ctrl+V pastes a copy from the app as a new layer at the same position, with the exact pixels.
 - The copy also goes to the system clipboard as a PNG, so other apps can paste it.
-- The Edit menu has Cut, Copy and Paste.
+- Copy image (Ctrl+Shift+C, the "Copy" button next to Export, or the Edit menu) copies the full image as you see it: all the visible layers, with the vignette and the frame, as a PNG with transparency. Hidden layers stay out. You can paste it in another app, for example Slack, with no export first.
+- Ctrl+V in the app pastes the copied image as a new layer.
+- The Edit menu has Cut, Copy, Copy image and Paste.
 - The paint tools and the adjustments change only the pixels inside the selection.
 - With the move tool, drag inside a selection to move its pixels to a new layer with the name "Cutout".
 - Layers panel: thumbnail, visibility, opacity, rename, drag to reorder, new, duplicate, delete and merge down.
@@ -110,15 +122,17 @@ The six color themes.
 ### Paint
 
 - Pen (hard edge, pixel by pixel), brush (hardness and opacity) and eraser. The cursor shows the outline of the brush.
-- The brush and the eraser have a "Tip" option in the options bar: "Round" or "Square". The cursor shows a square outline for a square tip.
+- The brush, the eraser and the highlighter have a "Tip" option in the options bar: "Round" or "Square". The cursor shows a square outline for a square tip.
 - A square tip is parallel to the axes, and its side is the tip size. The hardness also applies to it.
-- With a selection, the brush, the pen, the Pencil, the eraser and the clone stamp change only the pixels inside it. A stroke fully outside the selection changes no pixel, and the app shows "Outside the selection. Ctrl+D deselects."
+- With a selection, the brush, the pen, the Pencil, the highlighter, the eraser and the clone stamp change only the pixels inside it. A stroke fully outside the selection changes no pixel, and the app shows "Outside the selection. Ctrl+D deselects."
 - Paint bucket with a tolerance and the "Connected area only" option. The bucket reads only the pixels of the active layer, so the other layers do not limit the fill.
 - On an empty layer, one click of the bucket fills the full layer, or the selection when there is one.
 - With a text, shape or generated layer active, the bucket adds a new layer and fills it. This is one undo step.
+- Highlighter: a translucent stroke in the foreground color, with a square tip, size 24 px and 40% opacity by default. It paints on a "Highlight" layer above the active layer, so the pixels of the image do not change. While that layer stays active, the next strokes go on it; else the first stroke adds a new one. One stroke and its new layer are one undo step.
+- The options bar of the highlighter has 5 colors (yellow, green, pink, cyan and orange), the tip, the size, the hardness and the opacity.
 - Clone stamp: Alt+click or right-click sets the source. The hardness makes the edge hard or soft.
 - Eyedropper with a loupe. In the paint tools, Alt+click or right-click picks a color.
-- Shift+click draws a straight line from the end of the last stroke, with the brush, the pen, the Pencil, the eraser and the clone stamp.
+- Shift+click draws a straight line from the end of the last stroke, with the brush, the pen, the Pencil, the highlighter, the eraser and the clone stamp.
 - Color panel: foreground and background swatches, a saturation and brightness square, a hue strip, a hex field and the last 12 colors.
 
 ### Pencil
@@ -223,8 +237,8 @@ The app keeps these settings for the next start:
 - The width of the right sidebar.
 - The colors.
 - The language.
-- The settings of the brush and the paint bucket.
-- The tip shape of the brush and of the eraser.
+- The settings of the brush, the eraser, the highlighter and the paint bucket.
+- The tip shape of the brush, the eraser and the highlighter.
 - The texture of the Pencil, and one size for each texture.
 - The options of the selection tools: mode, soft edge, tolerance and "Connected area only".
 - The text style of the last text, and the list of recent fonts.
@@ -248,6 +262,7 @@ The app does not restore the last tool or an open panel. To put all the settings
 | Edit | Redo | Ctrl+Shift+Z or Ctrl+Y |
 | Edit | Cut | Ctrl+X |
 | Edit | Copy | Ctrl+C |
+| Edit | Copy image | Ctrl+Shift+C |
 | Edit | Paste | Ctrl+V |
 | Tools | Move | V |
 | Tools | Rectangle selection | M |
@@ -259,6 +274,7 @@ The app does not restore the last tool or an open panel. To put all the settings
 | Tools | Brush | B |
 | Tools | Pen | P |
 | Tools | Pencil | Y |
+| Tools | Highlighter | K |
 | Tools | Eraser | E |
 | Tools | Paint bucket | G |
 | Tools | Clone stamp | S |
