@@ -75,7 +75,7 @@ The six color themes.
 - New and Open add a tab above the stage, so you can edit more than one image at a time.
 - Click a tab to show its image. Each tab keeps its own zoom.
 - The close button of a tab, or a middle click on the tab, closes it. When the image has edits that you did not export, the app asks first.
-- The "+" button at the end of the tabs opens an image in a new tab.
+- The "+" button at the end of the tabs, or "New tab…" in the File menu, opens the New tab dialog. In it, paste an image with Ctrl+V or the Paste button, open a file, drop a file, or make a blank image. The image opens in a new tab.
 - You can open up to 8 tabs.
 - When you close the app and a tab has edits that you did not export, the app asks first.
 - Tabs operate in the web version and in the desktop app.
@@ -151,7 +151,7 @@ The six color themes.
 
 - Shapes tool: rectangle with square or rounded corners, ellipse, thin arrow and thick arrow.
 - Each shape has a border (red and 2 px by default) and an optional fill. The arrows have their own color and thickness.
-- Hold Shift to draw a square, a circle or an arrow at 45°. A click without a drag makes a shape of the default size.
+- Drag to set the size of a new shape: a click without a drag makes no shape. Hold Shift to draw a square, a circle or an arrow at 45°.
 - Each shape is its own layer. Move it, or change its size with the handles. It stays sharp at all sizes.
 - Steps tool: numbered badges for tutorials. Each click puts the next number. You can start again at 1.
 - All the steps of an image have one style: size, fill color, text color, border color, border width and shadow.
