@@ -56,6 +56,15 @@ export class EditorDoc {
   #height = $state(0);
   #layers = $state.raw<readonly Layer[]>([]);
   #activeId = $state<number | null>(null);
+  /** The layer ids of the multi-selection; read through selectedIds, which drops gone ids and follows the active layer. */
+  #picked = $state.raw<readonly number[]>([]);
+  #selectedIds = $derived.by((): readonly number[] => {
+    const active = this.#activeId;
+    if (active === null || !this.#layers.some((layer) => layer.id === active)) return [];
+    if (!this.#picked.includes(active)) return [active];
+    const picked = new Set(this.#picked);
+    return this.#layers.filter((layer) => picked.has(layer.id)).map((layer) => layer.id);
+  });
   #selection = $state.raw<Mask | null>(null);
   #guides = $state.raw<readonly Guide[]>([]);
   #grid = $state.raw<GridSpec>(DEFAULT_GRID);
@@ -96,6 +105,18 @@ export class EditorDoc {
 
   get activeId(): number | null {
     return this.#activeId;
+  }
+
+  /**
+   * The selected layers, bottom first: always the active layer, plus the layers that Ctrl or Shift added. An active
+   * layer that is not in the selection (a new layer, an undo) starts a new selection of that layer only.
+   */
+  get selectedIds(): readonly number[] {
+    return this.#selectedIds;
+  }
+
+  isSelected(id: number): boolean {
+    return this.#selectedIds.includes(id);
   }
 
   get selection(): Mask | null {
@@ -142,13 +163,62 @@ export class EditorDoc {
     return t('doc.layerName', { n: this.layerCounter });
   }
 
-  setActive(id: number | null): void {
+  /** Makes the layer active and the only selected layer; with `keepSelection`, a layer already selected keeps the selection. */
+  setActive(id: number | null, keepSelection = false): void {
     const next = id !== null && this.layer(id) ? id : null;
+    const keep = keepSelection && next !== null && this.isSelected(next);
+    if (!keep) this.#picked = next === null ? [] : [next];
     if (next === this.#activeId) return;
     this.#activeId = next;
   }
 
+  /** Adds the layer to the selection and makes it active, or takes it out (the newest other selected layer becomes active). */
+  toggleSelected(id: number): void {
+    if (!this.layer(id)) return;
+    const selected = this.#selectedIds;
+    if (!selected.includes(id)) {
+      this.#picked = [...this.#pickedOrder(selected), id];
+      this.#activeId = id;
+      return;
+    }
+    if (selected.length < 2) return;
+    const rest = this.#pickedOrder(selected).filter((entry) => entry !== id);
+    this.#picked = rest;
+    if (this.#activeId === id) this.#activeId = rest[rest.length - 1];
+  }
+
+  /** Selects the layers from the active layer to `id` (both included, in stack order) and makes `id` active. */
+  selectRange(id: number): void {
+    const to = this.indexOf(id);
+    if (to < 0) return;
+    const from = this.#activeId === null ? -1 : this.indexOf(this.#activeId);
+    if (from < 0) return this.setActive(id);
+    const lo = Math.min(from, to);
+    const hi = Math.max(from, to);
+    const range = this.#layers.slice(lo, hi + 1).map((layer) => layer.id);
+    // The clicked layer goes last: a Ctrl+click that takes the active layer out falls back on the newest pick.
+    this.#picked = [...range.filter((entry) => entry !== id), id];
+    this.#activeId = id;
+  }
+
+  /** The selected ids in the order they were picked, the active layer last. */
+  #pickedOrder(selected: readonly number[]): number[] {
+    const valid = new Set(selected);
+    const order = this.#picked.filter((entry) => valid.has(entry) && entry !== this.#activeId);
+    return this.#activeId !== null && valid.has(this.#activeId) ? [...order, this.#activeId] : order;
+  }
+
   // ----- history -----
+
+  /**
+   * Keeps the newest undo step open for a live drag held still: an empty change with the batch key `coalesce` merges
+   * into it. Nothing happens when another step is now the newest.
+   */
+  holdStep(label: TextKey, coalesce: string): void {
+    const key = `batch:${coalesce}`;
+    if (this.history.topCoalesce !== key) return;
+    this.history.push({ label, bytes: 0, coalesce: key, neutral: true, undo: () => {}, redo: () => {} });
+  }
 
   /** Undoes one step. The listeners get one null change. */
   undo(): HistoryEntry | null {

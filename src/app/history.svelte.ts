@@ -144,6 +144,11 @@ export class History {
     return this.#state.redoLabel;
   }
 
+  /** The coalesce key of the newest undo step, or undefined. */
+  get topCoalesce(): string | undefined {
+    return this.undoStack[this.undoStack.length - 1]?.coalesce;
+  }
+
   /** Bytes that the undo and redo steps keep. */
   get bytes(): number {
     return this.totalBytes;

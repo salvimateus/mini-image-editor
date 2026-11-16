@@ -24,6 +24,7 @@
   import * as sfx from '../../app/sfx.ts';
   import { app, prefersReducedMotion } from '../../app/state.svelte.ts';
   import { TUNING } from '../../app/tuning/index.ts';
+  import { uiZoom } from '../../app/ui-size.svelte.ts';
   import SliderField from '../base/SliderField.svelte';
   import { tooltip } from '../base/tooltip.ts';
 
@@ -80,7 +81,7 @@
   /** The layer inside the stage, scaled down on the CPU with a few samples per thumbnail px. */
   function drawThumb(canvas: HTMLCanvasElement, { doc: owner, layer }: ThumbParams): void {
     const box = TUNING.select.thumb.sizePx;
-    const ratio = Math.min(2, window.devicePixelRatio || 1);
+    const ratio = Math.min(2, (window.devicePixelRatio || 1) * uiZoom());
     const fit = Math.min(box / owner.width, box / owner.height);
     const cssW = Math.max(1, Math.round(owner.width * fit));
     const cssH = Math.max(1, Math.round(owner.height * fit));
@@ -155,10 +156,24 @@
     node.select();
   }
 
+  /** A plain click: the layer becomes active and the only selected layer. */
   function select(layer: Layer): void {
-    if (!doc || doc.activeId === layer.id) return;
+    if (!doc || (doc.activeId === layer.id && doc.selectedIds.length < 2)) return;
     doc.setActive(layer.id);
     sfx.play('tick');
+  }
+
+  function hasSelectKey(event: MouseEvent): boolean {
+    return event.ctrlKey || event.metaKey || event.shiftKey;
+  }
+
+  /** Ctrl (or Cmd) + click adds or takes out one layer; Shift + click selects the range from the active layer. */
+  function selectWithKeys(event: MouseEvent, layer: Layer): void {
+    if (!doc || editingId !== null || rowDrag || sortView) return;
+    const before = doc.selectedIds;
+    if (event.shiftKey) doc.selectRange(layer.id);
+    else doc.toggleSelected(layer.id);
+    if (doc.selectedIds !== before) sfx.play('tick');
   }
 
   /** edit = the button that opens the editor of the layer; null for a kind with no editor (an SVG layer). */
@@ -267,7 +282,7 @@
   function updateView(current: RowDrag): void {
     const count = current.ids.split(',').length;
     const scroll = list ? list.scrollTop - current.startScroll : 0;
-    const raw = current.clientY - current.startY + scroll;
+    const raw = (current.clientY - current.startY) / uiZoom() + scroll;
     const dy = Math.min((count - 1 - current.from) * current.step, Math.max(-current.from * current.step, raw));
     const target = Math.min(count - 1, Math.max(0, Math.round(current.from + dy / current.step)));
     if (sortView && sortView.target !== target) sfx.play('tick');
@@ -306,7 +321,7 @@
       const before = centers.get(id);
       if (before === undefined) continue;
       const box = row.getBoundingClientRect();
-      const dy = before - (box.top + box.height / 2);
+      const dy = (before - (box.top + box.height / 2)) / uiZoom();
       const lifted = id === liftedId;
       if (!lifted && Math.abs(dy) < 0.5) continue;
       const anim = row.animate([{ transform: `translateY(${dy}px)${lifted ? ` scale(${liftScale()})` : ''}` }, { transform: 'none' }], {
@@ -352,6 +367,12 @@
   function onRowDown(event: PointerEvent, layer: Layer, index: number): void {
     if (event.button !== 0 || editingId !== null || rowDrag) return;
     if ((event.target as HTMLElement).closest('.row-eye, .row-edit, input')) return;
+    // A selection press never starts a drag; no default keeps Shift from selecting the row text.
+    if (hasSelectKey(event)) {
+      event.preventDefault();
+      selectWithKeys(event, layer);
+      return;
+    }
     rowDrag = {
       id: layer.id,
       pointerId: event.pointerId,
@@ -448,10 +469,12 @@
     >
       {#each rows as layer, index (layer.id)}
         {@const isActive = layer.id === doc.activeId}
+        {@const isSelected = !isActive && doc.isSelected(layer.id)}
         {@const meta = editorMeta(layer)}
         <li
           class="layer-row"
           class:is-active={isActive}
+          class:is-selected={isSelected}
           class:is-hidden={!layer.visible}
           class:is-lifted={sortView?.id === layer.id || settlingId === layer.id}
           data-id={layer.id}
@@ -510,7 +533,11 @@
               type="button"
               class="row-name"
               use:tooltip={{ text: t('select.layers.nameTip', { name: layer.name }) }}
-              onclick={() => select(layer)}
+              onclick={(event) => {
+                // A pointer click with a key already selected on the press; a key press (detail 0) selects here.
+                if (!hasSelectKey(event)) select(layer);
+                else if (event.detail === 0) selectWithKeys(event, layer);
+              }}
               ondblclick={() => startRename(layer)}
               onkeydown={(event) => {
                 if (event.key === 'F2') {
@@ -521,6 +548,7 @@
             >
               <span class="row-name-text">{layer.name}</span>
               {#if !layer.visible}<span class="visually-hidden">({t('select.layers.hidden')})</span>{/if}
+              {#if isSelected}<span class="visually-hidden">({t('select.layers.selected')})</span>{/if}
             </button>
           {/if}
           {#if meta?.edit}
@@ -615,6 +643,13 @@
 
       &:hover {
         background: var(--surface-3);
+      }
+
+      /* A selected row that is not the active one: a lighter tint and a dashed edge. */
+      &.is-selected {
+        background: color-mix(in oklch, var(--primary-fill) 50%, var(--surface-1));
+        border-style: dashed;
+        border-color: var(--primary-edge);
       }
 
       &.is-active {

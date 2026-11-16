@@ -6,6 +6,7 @@ import { gridOverlay } from './grid.ts';
 import { guidesOverlay } from './guides.ts';
 import { loupeOverlay } from './loupe.ts';
 import { pixelGridOverlay } from './pixel-grid.ts';
+import { selectedLayersOverlay } from './selected-layers.svelte.ts';
 import { selectionOverlay } from './selection.ts';
 import { shapeHandlesOverlay } from './shape-handles.ts';
 import { snapFlashOverlay } from './snap-flash.ts';
@@ -22,6 +23,7 @@ export const OVERLAYS: readonly SceneOverlay[] = [
   avatarOverlay,
   guidesOverlay,
   selectionOverlay,
+  selectedLayersOverlay,
   cropOverlay,
   alignRefOverlay,
   transformOverlay,

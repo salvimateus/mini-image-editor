@@ -101,6 +101,7 @@ The six color themes.
 - Layers panel: thumbnail, visibility, opacity, rename, drag to reorder, new, duplicate, delete and merge down.
 - A dropped, pasted or added image becomes a new layer. An image larger than the canvas is fitted inside it.
 - Move tool: drag a layer, or push an arrow key to move it 1 px (10 px with Shift).
+- Select more than one layer in the Layers panel: Ctrl+click (Cmd+click on macOS) adds or removes a layer, and Shift+click selects a range. The move tool moves all the selected layers together, with a drag or with the arrow keys, in one undo step. The other actions operate only on the active layer. The vignette and the frame do not move with the other layers.
 - Resize a layer with handles. The resize is proportional; hold Shift to resize freely.
 - Align a layer to the canvas: left, center, right, top, middle or bottom. The alignment uses the visible pixels of the layer.
 
@@ -216,6 +217,12 @@ The six color themes.
 - Each action gives a short sound.
 - To mute the sounds, click the mute button in the top bar, or use View > Sounds.
 
+### Interface size
+
+- Use View > Larger interface, View > Smaller interface or View > Interface at 100% to change the size of the whole interface. The steps are 80%, 90%, 100%, 110%, 125% and 150%. These items have no shortcut, because Ctrl + and Ctrl - zoom the image.
+- A size above 100% applies only while the window can show the full editor at that size. In a smaller window, the interface stays at the largest size that fits.
+- The app remembers the size for the next start.
+
 ### Themes
 
 - Six color themes: Moss (the default, dark), Mint (light), Graphite (dark), Paper (light), Neon (dark) and Ice cream (light).
@@ -234,6 +241,7 @@ The six color themes.
 The app keeps these settings for the next start:
 
 - The theme, and the window size and position.
+- The interface size.
 - The width of the right sidebar.
 - The colors.
 - The language.

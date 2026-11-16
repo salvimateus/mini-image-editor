@@ -1,6 +1,6 @@
 import { fromStore, writable } from 'svelte/store';
 import { coverage, type Mask } from '../../core/mask.ts';
-import { createRaster, cropRaster, intersectRect, opaqueBounds, readRect } from '../../core/raster.ts';
+import { createRaster, cropRaster, intersectRect, opaqueBounds, readRect, unionRect } from '../../core/raster.ts';
 import type { Point, RasterImage, Rect } from '../../core/types.ts';
 import type { StagePointer } from '../../ui/stage-renderer.ts';
 import type { EditorDoc, LayerPreview } from '../doc.svelte.ts';
@@ -36,11 +36,18 @@ export function layerBounds(doc: EditorDoc, layer: Layer): Rect | null {
 /** A layer that counts for align and snap: visible, opacity > 0, with pixels. `bounds` are its visible bounds in document px. */
 export interface LayerBox { layer: Layer; bounds: Rect }
 
-/** The layers that count, bottom first (the order of `doc.layers`), without the layer `exceptId`. */
-export function visibleLayerBoxes(doc: EditorDoc, exceptId?: number | null): LayerBox[] {
+/** One layer id, a set of ids, or nothing: the layers that a list leaves out. */
+export type LayerExcept = number | ReadonlySet<number> | null | undefined;
+
+function isExcepted(except: LayerExcept, id: number): boolean {
+  return typeof except === 'number' ? except === id : !!except?.has(id);
+}
+
+/** The layers that count, bottom first (the order of `doc.layers`), without the layers in `except`. */
+export function visibleLayerBoxes(doc: EditorDoc, except?: LayerExcept): LayerBox[] {
   const boxes: LayerBox[] = [];
   for (const layer of doc.layers) {
-    if (layer.id === exceptId || !layer.visible || layer.opacity <= 0) continue;
+    if (isExcepted(except, layer.id) || !layer.visible || layer.opacity <= 0) continue;
     const bounds = layerBounds(doc, layer);
     if (bounds) boxes.push({ layer, bounds });
   }
@@ -48,12 +55,30 @@ export function visibleLayerBoxes(doc: EditorDoc, exceptId?: number | null): Lay
 }
 
 /**
- * The snap targets of the layers that count, without `exceptId`, for one drag. They are computed on the first call and
- * kept, because a scan of each layer on each pointer move is too slow; make a new one for each drag.
+ * The snap targets of the layers that count, without the layers in `except`, for one drag. They are computed on the
+ * first call and kept, because a scan of each layer on each pointer move is too slow; make a new one for each drag.
  */
-export function layerSnapSource(doc: EditorDoc, exceptId: number | null): () => readonly SnapTarget[] {
+export function layerSnapSource(doc: EditorDoc, except: LayerExcept): () => readonly SnapTarget[] {
   let targets: SnapTarget[] | null = null;
-  return () => (targets ??= boxTargets(visibleLayerBoxes(doc, exceptId).map((box) => box.bounds)));
+  return () => (targets ??= boxTargets(visibleLayerBoxes(doc, except).map((box) => box.bounds)));
+}
+
+function isGenerated(layer: Layer): boolean {
+  return layer.kind === 'raster' && !!layer.generator;
+}
+
+/**
+ * The layers that a Move drag or a nudge moves together: the selected layers without the generated ones (a stage
+ * change puts those back at 0, 0). Null when fewer than two are left, so the active layer moves alone.
+ */
+export function moveGroup(doc: EditorDoc): readonly Layer[] | null {
+  if (doc.selectedIds.length < 2) return null;
+  const layers: Layer[] = [];
+  for (const id of doc.selectedIds) {
+    const layer = doc.layer(id);
+    if (layer && !isGenerated(layer)) layers.push(layer);
+  }
+  return layers.length >= 2 ? layers : null;
 }
 
 /** True when the layer has a pixel of alpha > 0 within `reach` layer px (a square) of the layer point. */
@@ -443,7 +468,22 @@ interface LiftDrag {
   layers: () => readonly SnapTarget[];
 }
 
-let drag: LayerDrag | LiftDrag | null = null;
+/** A drag of the selected layers together: one offset for all, one undo step. */
+interface GroupDrag {
+  kind: 'group';
+  doc: EditorDoc;
+  origins: ReadonlyMap<number, Point>;
+  start: StagePointer;
+  /** The union of the visible bounds at the press, or null when no layer has a pixel. */
+  bounds: Rect | null;
+  key: string;
+  moved: boolean;
+  layers: () => readonly SnapTarget[];
+  lastPush: number;
+  timer: ReturnType<typeof setInterval> | null;
+}
+
+let drag: LayerDrag | LiftDrag | GroupDrag | null = null;
 let dragSerial = 0;
 
 /** The pixels of the selection on a raster layer, lifted by coverage; null when the selection holds no pixel of it. */
@@ -519,6 +559,64 @@ export function floatingSprite(): FloatingSprite | null {
   return s ? { canvas: s.sprite, rect: s.box, opacity: s.opacity } : null;
 }
 
+/** True while the selected layers move together, after the first move of the drag. */
+export function groupDragging(): boolean {
+  return drag?.kind === 'group' && drag.moved;
+}
+
+function startGroupDrag(doc: EditorDoc, group: readonly Layer[], p: StagePointer): void {
+  const origins = new Map<number, Point>();
+  let bounds: Rect | null = null;
+  for (const layer of group) {
+    origins.set(layer.id, { x: layer.x, y: layer.y });
+    const rect = layerBounds(doc, layer);
+    if (rect) bounds = unionRect(bounds, rect);
+  }
+  dragSerial += 1;
+  drag = {
+    kind: 'group',
+    doc,
+    origins,
+    start: p,
+    bounds,
+    key: `move-group-${dragSerial}`,
+    moved: false,
+    layers: layerSnapSource(doc, new Set(doc.selectedIds)),
+    lastPush: 0,
+    timer: null,
+  };
+}
+
+/** A held drag keeps its one undo step open: an empty change goes in again before the coalesce time ends. */
+function keepGroupAlive(current: GroupDrag): void {
+  if (drag !== current || current.lastPush === 0) return;
+  if (performance.now() - current.lastPush < TUNING.shapes.keepAliveMs) return;
+  current.doc.holdStep('history.layerPosition', current.key);
+  current.lastPush = performance.now();
+}
+
+function moveGroupDrag(current: GroupDrag, p: StagePointer): void {
+  const { doc } = current;
+  const dx = Math.round(p.ix - current.start.ix);
+  const dy = Math.round(p.iy - current.start.iy);
+  let ox = dx;
+  let oy = dy;
+  if (current.bounds) {
+    const snap = snapBoxLive({ ...current.bounds, x: current.bounds.x + dx, y: current.bounds.y + dy }, p.ctrl, current.layers);
+    ox += Math.round(snap.dx);
+    oy += Math.round(snap.dy);
+  }
+  doc.batch(
+    'history.layerPosition',
+    () => {
+      for (const [id, origin] of current.origins) doc.setLayerProps(id, { x: origin.x + ox, y: origin.y + oy });
+    },
+    current.key,
+  );
+  current.lastPush = performance.now();
+  current.timer ??= setInterval(() => keepGroupAlive(current), TUNING.shapes.keepAliveMs / 2);
+}
+
 function startDrag(p: StagePointer): boolean {
   const doc = app.doc;
   if (!doc) return false;
@@ -533,8 +631,13 @@ function startDrag(p: StagePointer): boolean {
   }
   const layer = layerAt(doc, p.ix, p.iy) ?? active;
   if (!layer) return false;
+  const group = doc.isSelected(layer.id) ? moveGroup(doc) : null;
+  if (group?.some((entry) => entry.id === layer.id)) {
+    startGroupDrag(doc, group, p);
+    return true;
+  }
   if (layer.id !== doc.activeId) {
-    doc.setActive(layer.id);
+    doc.setActive(layer.id, true);
     sfx.play('tick');
   }
   const bounds = layerBounds(doc, layer) ?? { x: layer.x, y: layer.y, w: layer.image.width, h: layer.image.height };
@@ -552,6 +655,10 @@ function moveDrag(p: StagePointer): void {
     current.moved = true;
     stageDragging.set(true);
     if (current.kind === 'lift') doc.setPreview(current.preview);
+  }
+  if (current.kind === 'group') {
+    if (current.doc === doc) moveGroupDrag(current, p);
+    return;
   }
   const dx = Math.round(p.ix - current.start.ix);
   const dy = Math.round(p.iy - current.start.iy);
@@ -574,7 +681,8 @@ function endDrag(): void {
   clearSnapFeedback();
   stageDragging.set(false);
   if (!current) return;
-  if (current.kind === 'layer') {
+  if (current.kind === 'group' && current.timer) clearInterval(current.timer);
+  if (current.kind === 'layer' || current.kind === 'group') {
     if (current.moved) sfx.play('tick');
     return;
   }
@@ -619,7 +727,18 @@ function nudge(e: KeyboardEvent): boolean {
     return true;
   }
   if (drag) return true;
-  doc.setLayerProps(layer.id, { x: layer.x + dir.x * step, y: layer.y + dir.y * step }, 'nudge');
+  const group = moveGroup(doc);
+  if (group) {
+    doc.batch(
+      'history.layerPosition',
+      () => {
+        for (const entry of group) doc.setLayerProps(entry.id, { x: entry.x + dir.x * step, y: entry.y + dir.y * step });
+      },
+      'nudge-group',
+    );
+  } else {
+    doc.setLayerProps(layer.id, { x: layer.x + dir.x * step, y: layer.y + dir.y * step }, 'nudge');
+  }
   sfx.play('tick');
   return true;
 }
@@ -633,6 +752,7 @@ const MOVE_HINTS: readonly Hint[] = [
 ];
 
 const SELECTION_HINT: Hint = { keys: 'Drag', text: 'select.hint.lift' };
+const GROUP_HINT: Hint = { keys: 'Drag', text: 'select.hint.moveGroup' };
 
 const TRANSFORM_HINTS: readonly Hint[] = [
   { keys: 'Drag', text: 'select.hint.scale' },
@@ -646,7 +766,10 @@ export const moveTool: ToolController = {
   id: 'move',
   get hints() {
     if (transformView.current) return TRANSFORM_HINTS;
-    return app.doc?.selection ? [MOVE_HINTS[0], SELECTION_HINT, ...MOVE_HINTS.slice(1)] : MOVE_HINTS;
+    const doc = app.doc;
+    const first = doc && moveGroup(doc) ? GROUP_HINT : MOVE_HINTS[0];
+    if (doc?.selection) return [first, SELECTION_HINT, ...MOVE_HINTS.slice(1)];
+    return first === GROUP_HINT ? [first, ...MOVE_HINTS.slice(1)] : MOVE_HINTS;
   },
   cursor(p) {
     if (p && liveSession()) {
